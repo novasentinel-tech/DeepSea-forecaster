@@ -1,0 +1,94 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Forcing Dark Mode Professional Aesthetic */
+    --font-sans: 'Plus Jakarta Sans', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+
+    /* Deep, rich slate backgrounds */
+    --background: 224 35% 8%;
+    --foreground: 210 40% 98%;
+
+    --card: 222 30% 11%;
+    --card-foreground: 210 40% 98%;
+    
+    --popover: 222 30% 11%;
+    --popover-foreground: 210 40% 98%;
+
+    /* New Vibrant Violet/Magenta Theme */
+    --primary: 260 100% 70%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 217 24% 20%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217 24% 16%;
+    --muted-foreground: 215 20% 65%;
+
+    /* New Vibrant accent */
+    --accent: 330 100% 65%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217 24% 20%;
+    --input: 217 24% 20%;
+    --ring: 260 100% 70%;
+
+    --radius: 0.75rem;
+
+    /* Sidebar specifics */
+    --sidebar-background: 224 35% 8%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 260 100% 70%;
+    --sidebar-primary-foreground: 210 40% 98%;
+    --sidebar-accent: 217 24% 16%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 217 24% 20%;
+    --sidebar-ring: 260 100% 70%;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased selection:bg-primary/30;
+    font-family: var(--font-sans);
+    background-image: 
+      radial-gradient(circle at 15% 50%, hsla(var(--primary), 0.08), transparent 25%),
+      radial-gradient(circle at 85% 30%, hsla(var(--accent), 0.05), transparent 25%);
+    background-attachment: fixed;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-bold tracking-tight text-foreground;
+  }
+}
+
+@layer utilities {
+  .glass-card {
+    @apply bg-card/60 backdrop-blur-xl border border-white/5 shadow-2xl;
+  }
+  
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-violet-400 via-purple-400 to-fuchsia-400;
+  }
+
+  /* Custom Scrollbar for dark theme */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-secondary rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground;
+  }
+}
