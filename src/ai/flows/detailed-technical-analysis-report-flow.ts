@@ -64,6 +64,10 @@ class TOTEMDeepseaClient {
   async getTechnicalAnalysis(modelId: string, periods: number): Promise<any> {
     return this.request(`/technical_analysis/${modelId}?periods=${periods}`);
   }
+  
+  async getModels(): Promise<any> {
+    return this.request('/models');
+  }
 
   async forecastLSTM(modelId: string, periods: number): Promise<any> {
     return this.request(`/forecast_lstm?model_id=${modelId}&periods=${periods}`);
