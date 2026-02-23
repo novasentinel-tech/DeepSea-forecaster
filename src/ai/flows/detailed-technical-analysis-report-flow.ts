@@ -196,15 +196,26 @@ const detailedTechnicalAnalysisReportFlow = ai.defineFlow(
     outputSchema: DetailedTechnicalAnalysisReportOutputSchema,
   },
   async (input) => {
-    // Fetch technical analysis data
-    const technicalAnalysisData = await deepseaClient.getTechnicalAnalysis(input.modelId, input.periods);
+    // Determine model type to call the correct forecast endpoint
+    const models = (await deepseaClient.getModels() as any).models;
+    const modelDetails = models[input.modelId];
+    if (!modelDetails) {
+        throw new Error(`Model with ID ${input.modelId} not found.`);
+    }
+    const modelType = modelDetails.type;
 
-    // Fetch forecast data. Assuming LSTM for now, but a more robust system would determine model_type.
-    const forecastData = await deepseaClient.forecastLSTM(input.modelId, input.periods);
+    // Fetch data concurrently
+    const [technicalAnalysisData, forecastData] = await Promise.all([
+        deepseaClient.getTechnicalAnalysis(input.modelId, input.periods),
+        modelType === 'lstm' 
+            ? deepseaClient.forecastLSTM(input.modelId, input.periods) 
+            : deepseaClient.forecastProphet(input.modelId, input.periods)
+    ]);
+
 
     // Pre-process data for the prompt to ensure correct Handlebars rendering
-    const modelConfidencePercentage = Math.round(forecastData.performance_summary.model_confidence * 100);
-    const anomaliesWithIndex = (forecastData.anomalies.anomalies || []).map((anomaly: any, index: number) => ({
+    const modelConfidencePercentage = Math.round((forecastData.performance_summary?.model_confidence || 0) * 100);
+    const anomaliesWithIndex = (forecastData.anomalies?.anomalies || []).map((anomaly: any, index: number) => ({
       ...anomaly,
       index: index + 1,
     }));

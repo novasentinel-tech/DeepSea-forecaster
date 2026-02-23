@@ -185,6 +185,7 @@ export interface TrainProphetResponse {
   data_summary: Record<string, any>;
   training_time_seconds: number;
   created_at: string;
+  status: string;
 }
 
 export interface UploadCSVResponse {

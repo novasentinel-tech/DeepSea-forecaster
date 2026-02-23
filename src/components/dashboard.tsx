@@ -55,7 +55,7 @@ const translations: Record<string, string> = {
 };
 
 const translateKey = (key: string) => {
-    const keyLower = key.toLowerCase();
+    const keyLower = String(key).toLowerCase();
     return translations[keyLower] || key.replace(/_/g, ' ');
 };
 
@@ -101,7 +101,14 @@ export function Dashboard({ modelId }: DashboardProps) {
       setReport(null);
 
       try {
-        const forecastData = modelId.startsWith("lstm")
+        const models = await apiClient.getModels();
+        const modelType = models.models[modelId]?.type;
+
+        if (!modelType) {
+            throw new Error(`Modelo com ID ${modelId} não encontrado ou tipo inválido.`);
+        }
+
+        const forecastData = modelType === 'lstm'
           ? await apiClient.forecastLSTM(modelId)
           : await apiClient.forecastProphet(modelId);
         
