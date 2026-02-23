@@ -5,7 +5,7 @@ import type {
   TrainLSTMResponse,
   TrainProphetResponse,
   UploadCSVResponse,
-  HealthStatus
+  HealthStatus,
 } from './types';
 
 export class TOTEMDeepseaClient {
@@ -14,17 +14,24 @@ export class TOTEMDeepseaClient {
 
   constructor() {
     this.apiKey = process.env.NEXT_PUBLIC_API_KEY;
-    // All requests must go through the Next.js proxy to avoid CORS issues in cloud dev environments.
-    this.apiHost = '/api';
-    
+    // Todas as requisições devem passar pelo proxy do Next.js para evitar problemas de CORS.
+    this.apiHost = '/api'; 
+
     if (!this.apiKey) {
-      console.warn('A variável de ambiente NEXT_PUBLIC_API_KEY não está definida. A API pode falhar se for necessária autenticação.');
+      console.warn(
+        'A variável de ambiente NEXT_PUBLIC_API_KEY não está definida. A API pode falhar se for necessária autenticação.'
+      );
     }
   }
 
-  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    const url = `${this.apiHost}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
-    
+  private async request<T>(
+    endpoint: string,
+    options: RequestInit = {}
+  ): Promise<T> {
+    const url = `${this.apiHost}${
+      endpoint.startsWith('/') ? endpoint : `/${endpoint}`
+    }`;
+
     const headers = new Headers(options.headers);
 
     if (this.apiKey) {
@@ -37,36 +44,51 @@ export class TOTEMDeepseaClient {
 
     let response;
     try {
-        response = await fetch(url, {
-          ...options,
-          headers,
-        });
+      response = await fetch(url, {
+        ...options,
+        headers,
+      });
     } catch (e: any) {
-        const networkErrorMessage = `Erro de rede ao tentar acessar ${url}: ${e.message}.`;
-        console.error(networkErrorMessage);
-        throw new Error(`Falha na conexão com a API. Verifique se o servidor está online e acessível em ${process.env.NEXT_PUBLIC_API_HOST}.`);
+      const networkErrorMessage = `Erro de rede ao tentar acessar ${url}: ${e.message}.`;
+      console.error(networkErrorMessage);
+      // A variável de ambiente do host real da API só é usada no lado do servidor pelo next.config.js
+      // Portanto, o erro para o usuário deve se referir a essa variável.
+      throw new Error(
+        `Falha na conexão com a API. Verifique se o servidor está online e se a variável de ambiente API_HOST em seu .env está configurada corretamente.`
+      );
     }
 
     if (!response.ok) {
       const errorText = await response.text();
-      const errorMessage = `Erro na API (${response.status} ${response.statusText}): ${errorText}`;
+      const errorMessage = `Erro na API (${response.status} ${
+        response.statusText
+      }): ${errorText || 'O servidor não retornou uma mensagem de erro.'}`;
       console.error(errorMessage);
       throw new Error(errorMessage);
     }
 
-    return response.json() as Promise<T>;
+    try {
+      return response.json() as Promise<T>;
+    } catch (e: any) {
+      const jsonErrorMessage = `Falha ao analisar a resposta JSON da API: ${e.message}`;
+      console.error(jsonErrorMessage);
+      throw new Error(jsonErrorMessage);
+    }
   }
 
   async uploadCSV(file: File): Promise<UploadCSVResponse> {
     const formData = new FormData();
     formData.append('file', file);
     return this.request('/upload_csv', {
-        method: 'POST',
-        body: formData
+      method: 'POST',
+      body: formData,
     });
   }
 
-  async trainLSTM(fileId: string, options: { lookback: number; epochs: number; batch_size: number; }): Promise<TrainLSTMResponse> {
+  async trainLSTM(
+    fileId: string,
+    options: { lookback: number; epochs: number; batch_size: number }
+  ): Promise<TrainLSTMResponse> {
     return this.request('/train_lstm', {
       method: 'POST',
       body: JSON.stringify({
@@ -78,7 +100,14 @@ export class TOTEMDeepseaClient {
     });
   }
 
-  async trainProphet(fileId: string, options: { quarterly_seasonality: boolean, yearly_seasonality: boolean, interval_width: number }): Promise<TrainProphetResponse> {
+  async trainProphet(
+    fileId: string,
+    options: {
+      quarterly_seasonality: boolean;
+      yearly_seasonality: boolean;
+      interval_width: number;
+    }
+  ): Promise<TrainProphetResponse> {
     return this.request('/train_prophet', {
       method: 'POST',
       body: JSON.stringify({
@@ -87,13 +116,15 @@ export class TOTEMDeepseaClient {
       }),
     });
   }
-  
+
   async forecastLSTM(modelId: string, periods = 24): Promise<ForecastData> {
     return this.request(`/forecast_lstm?model_id=${modelId}&periods=${periods}`);
   }
 
   async forecastProphet(modelId: string, periods = 24): Promise<ForecastData> {
-    return this.request(`/forecast_prophet?model_id=${modelId}&periods=${periods}`);
+    return this.request(
+      `/forecast_prophet?model_id=${modelId}&periods=${periods}`
+    );
   }
 
   async getModels(): Promise<ModelList> {
@@ -109,19 +140,6 @@ export class TOTEMDeepseaClient {
   }
 
   async getHealth(): Promise<HealthStatus> {
-    // This endpoint might not require authentication, so handle potential errors gracefully
-    try {
-        const response = await fetch(`${this.apiHost}/health`);
-        if (!response.ok) {
-           const rootResponse = await fetch(`${this.apiHost}/`);
-           if(!rootResponse.ok) {
-             throw new Error(`API health check failed: ${rootResponse.statusText}`)
-           }
-           return rootResponse.json()
-        }
-        return response.json();
-    } catch (e: any) {
-        throw new Error(`Falha ao verificar o status da API: ${e.message}`);
-    }
+    return this.request('/health');
   }
 }
