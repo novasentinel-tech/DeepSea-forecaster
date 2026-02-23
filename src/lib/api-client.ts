@@ -14,7 +14,9 @@ export class TOTEMDeepseaClient {
 
   constructor() {
     this.apiKey = process.env.NEXT_PUBLIC_API_KEY;
-    this.apiHost = process.env.NEXT_PUBLIC_API_HOST || '/api';
+    // Sempre use o caminho relativo para o proxy funcionar no lado do cliente.
+    // O servidor Next.js cuidará de reescrever isso para o host completo da API.
+    this.apiHost = '/api';
     
     if (!this.apiKey) {
       console.warn('A variável de ambiente NEXT_PUBLIC_API_KEY não está definida. A API pode falhar se for necessária autenticação.');
@@ -107,16 +109,16 @@ export class TOTEMDeepseaClient {
   }
 
   async getHealth(): Promise<HealthStatus> {
-    // The health endpoint might not require auth, so handle potential errors gracefully
+    // O endpoint de saúde pode não exigir autenticação, então trate os erros potenciais com elegância
     try {
         return await this.request('/health');
     } catch (e) {
-        // A health check can also be done on the root
+        // Uma verificação de saúde também pode ser feita na raiz
         try {
             return await this.request('/');
         } catch (finalError) {
             console.error("Ambas as tentativas de verificação de saúde falharam.", finalError);
-            throw finalError; // Re-throw the error after logging
+            throw finalError; // Re-lança o erro após o log
         }
     }
   }
