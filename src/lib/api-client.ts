@@ -13,7 +13,7 @@ export class TOTEMDeepseaClient {
 
   constructor() {
     this.apiKey = process.env.NEXT_PUBLIC_API_KEY || "sk_oSBMF-nwZBfEv6RrzD1F1no72Cp10qQsMkPq8ztPPIY";
-    this.apiHost = process.env.NEXT_PUBLIC_API_HOST || 'http://localhost:8000';
+    this.apiHost = '/api';
     
     if (!this.apiKey) {
       console.warn('API_KEY is not provided. Please set NEXT_PUBLIC_API_KEY in your .env.local file.');
