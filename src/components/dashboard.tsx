@@ -20,7 +20,6 @@ import { AlertCircle, CheckCircle, TrendingUp, Zap, BarChart2 } from "lucide-rea
 import { ForecastChart } from "./forecast-chart";
 import { Badge } from "./ui/badge";
 
-// @ts-ignore
 import { Remarkable } from 'remarkable';
 
 interface DashboardProps {
