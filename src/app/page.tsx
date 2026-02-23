@@ -50,11 +50,14 @@ export default function Home() {
       setModels(modelsRes.models || {});
     } catch (error) {
       console.error(error);
+      const errorMessage = error instanceof Error ? error.message : "Não foi possível carregar arquivos e modelos. Verifique se a API está em execução e configurada corretamente.";
       toast({
-        title: "Erro ao buscar dados",
-        description: "Não foi possível carregar arquivos e modelos. Verifique se a API está em execução.",
+        title: "Erro ao buscar dados da API",
+        description: errorMessage,
         variant: "destructive",
       });
+      setFiles({});
+      setModels({});
     }
   }, [apiClient, toast]);
 

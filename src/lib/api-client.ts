@@ -16,7 +16,7 @@ export class TOTEMDeepseaClient {
     this.apiHost = '/api';
     
     if (!this.apiKey) {
-      console.warn('NEXT_PUBLIC_API_KEY is not provided. Please set it in your .env file.');
+      console.warn('A variável de ambiente NEXT_PUBLIC_API_KEY não está definida. Por favor, configure-a no seu arquivo .env.');
     }
   }
 
@@ -40,8 +40,9 @@ export class TOTEMDeepseaClient {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`API Error: ${response.status} ${response.statusText} - ${errorText}`);
-      throw new Error(`API Error: ${response.status} ${response.statusText} - ${errorText}`);
+      const errorMessage = `Erro na API (${response.status}): ${errorText}`;
+      console.error(errorMessage);
+      throw new Error(errorMessage);
     }
 
     return response.json() as Promise<T>;
