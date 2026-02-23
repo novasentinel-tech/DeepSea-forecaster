@@ -14,7 +14,8 @@ export class TOTEMDeepseaClient {
 
   constructor() {
     this.apiKey = process.env.NEXT_PUBLIC_API_KEY;
-    this.apiHost = process.env.NEXT_PUBLIC_API_HOST || 'http://127.0.0.1:8000';
+    // All requests must go through the Next.js proxy to avoid CORS issues in cloud dev environments.
+    this.apiHost = '/api';
     
     if (!this.apiKey) {
       console.warn('A variável de ambiente NEXT_PUBLIC_API_KEY não está definida. A API pode falhar se for necessária autenticação.');
@@ -22,7 +23,7 @@ export class TOTEMDeepseaClient {
   }
 
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    const url = `${this.apiHost}${endpoint}`;
+    const url = `${this.apiHost}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
     
     const headers = new Headers(options.headers);
 
@@ -43,7 +44,7 @@ export class TOTEMDeepseaClient {
     } catch (e: any) {
         const networkErrorMessage = `Erro de rede ao tentar acessar ${url}: ${e.message}.`;
         console.error(networkErrorMessage);
-        throw new Error(`Falha na conexão com a API. Verifique se o servidor está online e acessível em ${this.apiHost}.`);
+        throw new Error(`Falha na conexão com a API. Verifique se o servidor está online e acessível em ${process.env.NEXT_PUBLIC_API_HOST}.`);
     }
 
     if (!response.ok) {
