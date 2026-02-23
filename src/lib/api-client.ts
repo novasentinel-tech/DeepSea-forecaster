@@ -12,23 +12,25 @@ export class TOTEMDeepseaClient {
   private apiHost: string;
 
   constructor() {
-    this.apiKey = process.env.NEXT_PUBLIC_API_KEY || "sk_oSBMF-nwZBfEv6RrzD1F1no72Cp10qQsMkPq8ztPPIY";
+    this.apiKey = process.env.NEXT_PUBLIC_API_KEY || "";
     this.apiHost = '/api';
     
     if (!this.apiKey) {
-      console.warn('API_KEY is not provided. Please set NEXT_PUBLIC_API_KEY in your .env.local file.');
+      console.warn('API_KEY is not provided. Please set NEXT_PUBLIC_API_KEY in your .env file.');
     }
   }
 
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.apiHost}${endpoint}`;
-    const headers = {
-      'Authorization': `Bearer ${this.apiKey}`,
-      ...options.headers,
-    };
+    
+    const headers = new Headers(options.headers);
 
-    if (!(options.body instanceof FormData)) {
-        headers['Content-Type'] = 'application/json';
+    if (this.apiKey) {
+      headers.set('Authorization', `Bearer ${this.apiKey}`);
+    }
+
+    if (!(options.body instanceof FormData) && !headers.has('Content-Type')) {
+      headers.set('Content-Type', 'application/json');
     }
 
     const response = await fetch(url, {
@@ -48,22 +50,10 @@ export class TOTEMDeepseaClient {
   async uploadCSV(file: File): Promise<UploadCSVResponse> {
     const formData = new FormData();
     formData.append('file', file);
-
-    const url = `${this.apiHost}/upload_csv`;
-    const response = await fetch(url, {
+    return this.request('/upload_csv', {
         method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${this.apiKey}`,
-        },
-        body: formData,
+        body: formData
     });
-
-    if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`API Error: ${response.status} ${response.statusText} - ${errorText}`);
-    }
-
-    return response.json();
   }
 
   async trainLSTM(fileId: string, options: { lookback: number; epochs: number; batch_size: number; }): Promise<TrainLSTMResponse> {
