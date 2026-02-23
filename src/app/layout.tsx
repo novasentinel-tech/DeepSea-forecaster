@@ -4,8 +4,8 @@ import { Toaster } from "@/components/ui/toaster"
 import { cn } from '@/lib/utils';
 
 export const metadata: Metadata = {
-  title: 'DeepSea Forecaster',
-  description: 'A complete system for predicting multivariate time series using LSTM and Facebook Prophet, with interactive dashboards and advanced analysis tools.',
+  title: 'Previsor DeepSea',
+  description: 'Um sistema completo para prever séries temporais multivariadas usando LSTM e Facebook Prophet, com painéis interativos e ferramentas de análise avançadas.',
 };
 
 export default function RootLayout({
@@ -14,7 +14,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="pt-BR" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />

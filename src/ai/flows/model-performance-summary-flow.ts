@@ -13,16 +13,16 @@ import {z} from 'genkit';
 const ModelPerformanceSummaryInputSchema = z.object({
   modelConfidence: z
     .number()
-    .describe("The confidence score of the model, a number between 0 and 1."),
+    .describe("A pontuação de confiança do modelo, um número entre 0 e 1."),
   predictionReliability: z
     .enum(['high', 'medium', 'low'])
-    .describe("The prediction reliability rating of the model."),
+    .describe("A classificação de confiabilidade da previsão do modelo."),
   recommendation: z
     .string()
-    .describe("The investment recommendation provided by the model (e.g., 'STRONG_BUY', 'HOLD')."),
+    .describe("A recomendação de investimento fornecida pelo modelo (ex: 'STRONG_BUY', 'HOLD')."),
   riskLevel: z
     .enum(['low', 'medium', 'high'])
-    .describe("The risk level associated with the model's predictions."),
+    .describe("O nível de risco associado às previsões do modelo."),
 });
 export type ModelPerformanceSummaryInput = z.infer<
   typeof ModelPerformanceSummaryInputSchema
@@ -31,7 +31,7 @@ export type ModelPerformanceSummaryInput = z.infer<
 const ModelPerformanceSummaryOutputSchema = z.object({
   summary: z
     .string()
-    .describe("A plain-text summary of the forecast model's performance."),
+    .describe("Um resumo em texto simples do desempenho do modelo de previsão."),
 });
 export type ModelPerformanceSummaryOutput = z.infer<
   typeof ModelPerformanceSummaryOutputSchema
@@ -47,9 +47,9 @@ const prompt = ai.definePrompt({
   name: 'modelPerformanceSummaryPrompt',
   input: {schema: ModelPerformanceSummaryInputSchema},
   output: {schema: ModelPerformanceSummaryOutputSchema},
-  prompt: `Generate a concise, plain-text summary of a forecast model's performance based on the following metrics.
+  prompt: `Gere um resumo conciso em texto simples do desempenho de um modelo de previsão com base nas seguintes métricas.
 
-Follow this pattern: "Confidence of X%, prediction reliability rating of Y, giving the investment advice of Z, with a risk level of W."
+Siga este padrão: "Confiança de X%, classificação de confiabilidade de previsão de Y, dando o conselho de investimento de Z, com um nível de risco de W."
 
 Model Confidence: {{{modelConfidence}}}
 Prediction Reliability: {{{predictionReliability}}}

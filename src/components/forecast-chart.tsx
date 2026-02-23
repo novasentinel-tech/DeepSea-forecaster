@@ -39,15 +39,15 @@ export function ForecastChart({ forecast }: ForecastChartProps) {
 
     return forecast.timestamps.dates.map((date, index) => ({
       date,
-      Actual: actual?.[index],
-      Forecast: forecast.forecast.values[index][0],
-      Confidence: upper95 && lower95 ? [lower95[index], upper95[index]] : undefined,
+      Real: actual?.[index],
+      Previsão: forecast.forecast.values[index][0],
+      Confiança: upper95 && lower95 ? [lower95[index], upper95[index]] : undefined,
     }));
   }, [forecast]);
 
   const yDomain = React.useMemo(() => {
     if (!chartData || chartData.length === 0) return [0, 100];
-    const allValues = chartData.flatMap(d => [d.Actual, d.Forecast, ...(d.Confidence || [])]).filter(v => v != null);
+    const allValues = chartData.flatMap(d => [d.Real, d.Previsão, ...(d.Confiança || [])]).filter(v => v != null);
     if (allValues.length === 0) return [0, 100];
     
     const min = Math.min(...allValues);
@@ -79,7 +79,7 @@ export function ForecastChart({ forecast }: ForecastChartProps) {
           fontSize={12}
           tickLine={false}
           axisLine={false}
-          tickFormatter={(value) => `$${value.toFixed(0)}`}
+          tickFormatter={(value) => `R$${value.toFixed(0)}`}
           domain={yDomain}
           allowDataOverflow={true}
         />
@@ -94,14 +94,14 @@ export function ForecastChart({ forecast }: ForecastChartProps) {
         <Legend wrapperStyle={{ fontSize: "0.8rem" }}/>
         <Line
           type="monotone"
-          dataKey="Actual"
+          dataKey="Real"
           stroke="hsl(var(--chart-1))"
           strokeWidth={2}
           dot={false}
         />
         <Line
           type="monotone"
-          dataKey="Forecast"
+          dataKey="Previsão"
           stroke="hsl(var(--chart-2))"
           strokeWidth={2}
           strokeDasharray="5 5"
@@ -109,11 +109,11 @@ export function ForecastChart({ forecast }: ForecastChartProps) {
         />
         <Area
             type="monotone"
-            dataKey="Confidence"
+            dataKey="Confiança"
             fill="url(#colorForecast)"
             stroke="hsl(var(--chart-2))"
             strokeWidth={0}
-            name="95% Confidence"
+            name="Confiança de 95%"
         />
       </ComposedChart>
     </ResponsiveContainer>

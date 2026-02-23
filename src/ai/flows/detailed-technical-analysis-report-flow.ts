@@ -13,14 +13,14 @@ import 'dotenv/config'; // Load environment variables
 
 // Define the input schema
 const DetailedTechnicalAnalysisReportInputSchema = z.object({
-  modelId: z.string().describe('The ID of the trained model (LSTM or Prophet).'),
-  periods: z.number().default(24).describe('The number of periods for the forecast and analysis.'),
+  modelId: z.string().describe('O ID do modelo treinado (LSTM ou Prophet).'),
+  periods: z.number().default(24).describe('O número de períodos para a previsão e análise.'),
 });
 export type DetailedTechnicalAnalysisReportInput = z.infer<typeof DetailedTechnicalAnalysisReportInputSchema>;
 
 // Define the output schema
 const DetailedTechnicalAnalysisReportOutputSchema = z.object({
-  report: z.string().describe('A detailed technical analysis report.'),
+  report: z.string().describe('Um relatório detalhado de análise técnica.'),
 });
 export type DetailedTechnicalAnalysisReportOutput = z.infer<typeof DetailedTechnicalAnalysisReportOutputSchema>;
 
@@ -89,102 +89,102 @@ const detailedTechnicalAnalysisReportPrompt = ai.definePrompt({
   name: 'detailedTechnicalAnalysisReportPrompt',
   input: {
     schema: z.object({
-      technicalAnalysisData: z.any().describe('Raw JSON data from the /technical_analysis endpoint.'),
-      forecastData: z.any().describe('Raw JSON data from the /forecast_lstm or /forecast_prophet endpoint.'),
-      modelConfidencePercentage: z.number().describe('Model confidence as a percentage.'),
+      technicalAnalysisData: z.any().describe('Dados JSON brutos do endpoint /technical_analysis.'),
+      forecastData: z.any().describe('Dados JSON brutos do endpoint /forecast_lstm ou /forecast_prophet.'),
+      modelConfidencePercentage: z.number().describe('Confiança do modelo como uma porcentagem.'),
       anomaliesWithIndex: z.array(z.object({
         period: z.number(),
         value: z.number(),
         zscore: z.number(),
         anomaly_type: z.string(),
         index: z.number(), // Added for display
-      })).describe('Anomalies with their 1-based index.'),
+      })).describe('Anomalias com seu índice baseado em 1.'),
     }),
   },
   output: {
     schema: DetailedTechnicalAnalysisReportOutputSchema,
   },
-  prompt: `You are an expert financial analyst. Your task is to generate a detailed technical analysis report based on the provided forecast and technical indicator data.
+  prompt: `Você é um analista financeiro especialista. Sua tarefa é gerar um relatório de análise técnica detalhado com base nos dados de previsão e indicadores técnicos fornecidos.
 
-Synthesize the data from RSI, MACD, Bollinger Bands, and Moving Averages.
-Determine an an overall buy/sell/hold signal and provide a concise recommendation.
-Identify and describe any detected anomalies, their potential impact, and assess the overall risks, rewards, and uncertainties summarized in the API output.
+Sintetize os dados de RSI, MACD, Bandas de Bollinger e Médias Móveis.
+Determine um sinal geral de compra/venda/manter e forneça uma recomendação concisa.
+Identifique e descreva quaisquer anomalias detectadas, seu impacto potencial, e avalie os riscos, recompensas e incertezas gerais resumidos na saída da API.
 
-Structure your report clearly with the following sections:
+Estruture seu relatório claramente com as seguintes seções:
 
-## Technical Analysis Report for Model: {{{forecastData.model_id}}}
+## Relatório de Análise Técnica para o Modelo: {{{forecastData.model_id}}}
 
-### 1. Overall Market Sentiment and Recommendation
-Based on the synthesized data, what is the overall market sentiment (bullish, bearish, neutral) and your primary recommendation (STRONG_BUY, BUY, HOLD, SELL, STRONG_SELL)? Explain your reasoning briefly.
+### 1. Sentimento Geral do Mercado e Recomendação
+Com base nos dados sintetizados, qual é o sentimento geral do mercado (otimista, pessimista, neutro) e sua recomendação principal (COMPRA_FORTE, COMPRA, MANTER, VENDA, VENDA_FORTE)? Explique seu raciocínio brevemente.
 
-Overall Recommendation: {{{forecastData.performance_summary.recommendation}}}
-Overall Signal: {{{technicalAnalysisData.signals.overall_signal}}}
-Confidence: {{modelConfidencePercentage}}%
-Prediction Reliability: {{{forecastData.performance_summary.prediction_reliability}}}
-Risk Level: {{{forecastData.performance_summary.risk_level}}}
+Recomendação Geral: {{{forecastData.performance_summary.recommendation}}}
+Sinal Geral: {{{technicalAnalysisData.signals.overall_signal}}}
+Confiança: {{modelConfidencePercentage}}%
+Confiabilidade da Previsão: {{{forecastData.performance_summary.prediction_reliability}}}
+Nível de Risco: {{{forecastData.performance_summary.risk_level}}}
 
-### 2. Key Technical Indicators
+### 2. Indicadores Técnicos Chave
 
-#### Relative Strength Index (RSI)
-- Current Value: {{{technicalAnalysisData.indicators.rsi.values.0}}}
-- Interpretation: {{{technicalAnalysisData.indicators.rsi.interpretation}}}
-- Thresholds: Overbought ({{{technicalAnalysisData.indicators.rsi.threshold_overbought}}}), Oversold ({{{technicalAnalysisData.indicators.rsi.threshold_oversold}}})
-- Insights: Describe what the RSI indicates about the current momentum.
+#### Índice de Força Relativa (RSI)
+- Valor Atual: {{{technicalAnalysisData.indicators.rsi.values.0}}}
+- Interpretação: {{{technicalAnalysisData.indicators.rsi.interpretation}}}
+- Limiares: Sobrecomprado ({{{technicalAnalysisData.indicators.rsi.threshold_overbought}}}), Sobrevendido ({{{technicalAnalysisData.indicators.rsi.threshold_oversold}}})
+- Insights: Descreva o que o RSI indica sobre o momento atual.
 
-#### Moving Average Convergence Divergence (MACD)
-- MACD Line: {{{technicalAnalysisData.indicators.macd.macd.0}}}
-- Signal Line: {{{technicalAnalysisData.indicators.macd.signal.0}}}
-- Histogram: {{{technicalAnalysisData.indicators.macd.histogram.0}}}
-- Signal Cross: {{{technicalAnalysisData.indicators.macd.signal_cross}}}
-- Insights: Explain the implications of the MACD lines and histogram. Is there a bullish or bearish crossover?
+#### Convergência e Divergência de Médias Móveis (MACD)
+- Linha MACD: {{{technicalAnalysisData.indicators.macd.macd.0}}}
+- Linha de Sinal: {{{technicalAnalysisData.indicators.macd.signal.0}}}
+- Histograma: {{{technicalAnalysisData.indicators.macd.histogram.0}}}
+- Cruzamento de Sinal: {{{technicalAnalysisData.indicators.macd.signal_cross}}}
+- Insights: Explique as implicações das linhas MACD e do histograma. Existe um cruzamento otimista ou pessimista?
 
-#### Bollinger Bands
-- Upper Band: {{{technicalAnalysisData.indicators.bollinger_bands.upper.0}}}
-- Middle Band (SMA): {{{technicalAnalysisData.indicators.bollinger_bands.middle.0}}}
-- Lower Band: {{{technicalAnalysisData.indicators.bollinger_bands.lower.0}}}
-- Bandwidth: {{{technicalAnalysisData.indicators.bollinger_bands.band_width}}}
-- Price Position: {{{technicalAnalysisData.indicators.bollinger_bands.price_position}}}
-- Insights: What do the Bollinger Bands suggest about volatility and potential price reversals? Is the price near the upper, middle, or lower band?
+#### Bandas de Bollinger
+- Banda Superior: {{{technicalAnalysisData.indicators.bollinger_bands.upper.0}}}
+- Banda Média (SMA): {{{technicalAnalysisData.indicators.bollinger_bands.middle.0}}}
+- Banda Inferior: {{{technicalAnalysisData.indicators.bollinger_bands.lower.0}}}
+- Largura da Banda: {{{technicalAnalysisData.indicators.bollinger_bands.band_width}}}
+- Posição do Preço: {{{technicalAnalysisData.indicators.bollinger_bands.price_position}}}
+- Insights: O que as Bandas de Bollinger sugerem sobre a volatilidade e potenciais reversões de preço? O preço está perto da banda superior, média ou inferior?
 
-#### Moving Averages (from Forecast Data for broader context)
+#### Médias Móveis (dos Dados de Previsão para contexto mais amplo)
 - SMA 10: {{{forecastData.technical_indicators.moving_averages.sma_10}}}
 - SMA 20: {{{forecastData.technical_indicators.moving_averages.sma_20}}}
 - SMA 50: {{{forecastData.technical_indicators.moving_averages.sma_50}}}
 - EMA 10: {{{forecastData.technical_indicators.moving_averages.ema_10}}}
 - EMA 20: {{{forecastData.technical_indicators.moving_averages.ema_20}}}
-- Insights: Analyze the relationship between short-term and long-term moving averages. Are there any bullish or bearish crossovers?
+- Insights: Analise a relação entre as médias móveis de curto e longo prazo. Existem cruzamentos otimistas ou pessimistas?
 
-### 3. Trend Analysis
-- Overall Trend: {{{forecastData.trend_analysis.overall_trend}}}
-- Trend Strength: {{{forecastData.trend_analysis.trend_strength}}}
-- Slope: {{{forecastData.trend_analysis.slope}}}
-- Change Percent: {{{forecastData.trend_analysis.change_percent}}}
-- Volatility Forecast: {{{forecastData.trend_analysis.volatility_forecast}}}
-- Insights: Summarize the current trend and its strength.
+### 3. Análise de Tendência
+- Tendência Geral: {{{forecastData.trend_analysis.overall_trend}}}
+- Força da Tendência: {{{forecastData.trend_analysis.trend_strength}}}
+- Inclinação: {{{forecastData.trend_analysis.slope}}}
+- Variação Percentual: {{{forecastData.trend_analysis.change_percent}}}
+- Previsão de Volatilidade: {{{forecastData.trend_analysis.volatility_forecast}}}
+- Insights: Resuma a tendência atual e sua força.
 
-### 4. Anomaly Detection
+### 4. Detecção de Anomalias
 {{#if forecastData.anomalies.detected}}
-- Detected: Yes ({{forecastData.anomalies.count}} anomalies)
+- Detectado: Sim ({{forecastData.anomalies.count}} anomalias)
 {{#each anomaliesWithIndex}}
-  - Anomaly {{{this.index}}}:
-    - Period: {{{this.period}}}
-    - Value: {{{this.value}}}
+  - Anomalia {{{this.index}}}:
+    - Período: {{{this.period}}}
+    - Valor: {{{this.value}}}
     - Z-Score: {{{this.zscore}}}
-    - Type: {{{this.anomaly_type}}}
+    - Tipo: {{{this.anomaly_type}}}
 {{/each}}
-- Impact Assessment: Discuss the potential impact of these anomalies on future price movements or model reliability.
+- Avaliação de Impacto: Discuta o impacto potencial dessas anomalias nos movimentos de preços futuros ou na confiabilidade do modelo.
 {{else}}
-- Detected: No significant anomalies found.
+- Detectado: Nenhuma anomalia significativa encontrada.
 {{/if}}
 
-### 5. Risk and Uncertainty Assessment
-- Model Confidence: {{modelConfidencePercentage}}%
-- Prediction Reliability: {{{forecastData.performance_summary.prediction_reliability}}}
-- Risk Level: {{{forecastData.performance_summary.risk_level}}}
-- Insights: Elaborate on the risks and uncertainties associated with this forecast, considering the model's confidence and reliability.
+### 5. Avaliação de Risco e Incerteza
+- Confiança do Modelo: {{modelConfidencePercentage}}%
+- Confiabilidade da Previsão: {{{forecastData.performance_summary.prediction_reliability}}}
+- Nível de Risco: {{{forecastData.performance_summary.risk_level}}}
+- Insights: Elabore sobre os riscos e incertezas associados a esta previsão, considerando a confiança e a confiabilidade do modelo.
 
-### 6. Conclusion
-Provide a brief concluding statement summarizing the report's findings and reiterating the main recommendation.
+### 6. Conclusão
+Forneça uma breve declaração final resumindo as conclusões do relatório e reiterando a recomendação principal.
 `,
 });
 

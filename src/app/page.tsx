@@ -51,8 +51,8 @@ export default function Home() {
     } catch (error) {
       console.error(error);
       toast({
-        title: "Error fetching data",
-        description: "Could not load files and models. Please ensure the API is running.",
+        title: "Erro ao buscar dados",
+        description: "Não foi possível carregar arquivos e modelos. Verifique se a API está em execução.",
         variant: "destructive",
       });
     }
@@ -70,15 +70,15 @@ export default function Home() {
     try {
       const result = await apiClient.uploadCSV(file);
       toast({
-        title: "Upload Successful",
-        description: `File "${result.file_id}" uploaded with ${result.rows} rows.`,
+        title: "Upload bem-sucedido",
+        description: `Arquivo "${result.file_id}" enviado com ${result.rows} linhas.`,
       });
       await fetchFilesAndModels();
     } catch (error) {
       console.error(error);
       toast({
-        title: "Upload Failed",
-        description: "There was an error uploading your file.",
+        title: "Falha no Upload",
+        description: "Ocorreu um erro ao enviar seu arquivo.",
         variant: "destructive",
       });
     } finally {
@@ -106,8 +106,8 @@ export default function Home() {
         result = await apiClient.trainProphet(fileId, params);
       }
       toast({
-        title: "Training Started",
-        description: `Model ${result.model_id} is now training.`,
+        title: "Treinamento Iniciado",
+        description: `O modelo ${result.model_id} está treinando agora.`,
       });
       // Poll for models until the new one appears
       const poll = setInterval(async () => {
@@ -117,16 +117,16 @@ export default function Home() {
           setModels(modelsRes.models);
           setIsTraining(false);
           toast({
-            title: "Training Complete",
-            description: `Model ${result.model_id} is ready.`,
+            title: "Treinamento Concluído",
+            description: `O modelo ${result.model_id} está pronto.`,
           });
         }
       }, 5000);
     } catch (error) {
       console.error(error);
       toast({
-        title: "Training Failed",
-        description: "Could not start model training.",
+        title: "Falha no Treinamento",
+        description: "Não foi possível iniciar o treinamento do modelo.",
         variant: "destructive",
       });
       setIsTraining(false);
@@ -162,7 +162,7 @@ export default function Home() {
         </SidebarHeader>
         <SidebarContent>
           <SidebarGroup>
-            <SidebarGroupLabel>Data Sources</SidebarGroupLabel>
+            <SidebarGroupLabel>Fontes de Dados</SidebarGroupLabel>
             <SidebarMenu>
               {isLoadingData && Array.from({ length: 2 }).map((_, i) => (
                 <SidebarMenuItem key={i}><Skeleton className="h-8 w-full" /></SidebarMenuItem>
@@ -173,7 +173,7 @@ export default function Home() {
                     <button
                       onClick={() => openTrainingDialog(id)}
                       className="flex h-8 w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm outline-none ring-sidebar-ring transition-[width,height,padding] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50"
-                      title={`Train model with ${id}`}
+                      title={`Treinar modelo com ${id}`}
                     >
                       <FileText />
                       <span className="truncate">{id.replace('file_', '')}</span>
@@ -185,7 +185,7 @@ export default function Home() {
                 </SidebarMenuItem>
               ))}
               {files && Object.keys(files).length === 0 && !isLoadingData &&
-                <p className="px-2 text-xs text-muted-foreground">No files uploaded.</p>
+                <p className="px-2 text-xs text-muted-foreground">Nenhum arquivo enviado.</p>
               }
             </SidebarMenu>
           </SidebarGroup>
@@ -193,7 +193,7 @@ export default function Home() {
           <SidebarSeparator />
 
           <SidebarGroup>
-            <SidebarGroupLabel>Trained Models</SidebarGroupLabel>
+            <SidebarGroupLabel>Modelos Treinados</SidebarGroupLabel>
             <SidebarMenu>
                {isLoadingData && Array.from({ length: 3 }).map((_, i) => (
                 <SidebarMenuItem key={i}><Skeleton className="h-8 w-full" /></SidebarMenuItem>
@@ -207,7 +207,7 @@ export default function Home() {
                 </SidebarMenuItem>
               ))}
               {models && Object.keys(models).length === 0 && !isLoadingData &&
-                 <p className="px-2 text-xs text-muted-foreground">No models trained.</p>
+                 <p className="px-2 text-xs text-muted-foreground">Nenhum modelo treinado.</p>
               }
             </SidebarMenu>
           </SidebarGroup>
@@ -220,7 +220,7 @@ export default function Home() {
             disabled={isUploading}
           >
             <Upload className="mr-2 h-4 w-4" />
-            {isUploading ? "Uploading..." : "Upload CSV"}
+            {isUploading ? "Enviando..." : "Enviar CSV"}
           </Button>
         </SidebarFooter>
       </Sidebar>
@@ -228,7 +228,7 @@ export default function Home() {
       <SidebarInset>
         <div className="flex h-14 items-center gap-2 border-b bg-card px-4">
           <SidebarTrigger className="h-8 w-8 shrink-0" />
-          <h2 className="text-lg font-semibold font-headline">Forecasting Dashboard</h2>
+          <h2 className="text-lg font-semibold font-headline">Painel de Previsão</h2>
         </div>
 
         <main className="flex-1 overflow-auto p-4 md:p-6">
@@ -238,9 +238,9 @@ export default function Home() {
             <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center rounded-lg border-2 border-dashed bg-card">
               <div className="text-center">
                 <BarChart className="mx-auto h-12 w-12 text-muted-foreground" />
-                <h3 className="mt-4 text-lg font-semibold">Welcome to DeepSea Forecaster</h3>
+                <h3 className="mt-4 text-lg font-semibold">Bem-vindo ao Previsor DeepSea</h3>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  Select a model from the sidebar to view its forecast, <br /> or upload a CSV to get started.
+                  Selecione um modelo na barra lateral para ver sua previsão, <br /> ou envie um CSV para começar.
                 </p>
               </div>
             </div>

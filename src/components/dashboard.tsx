@@ -26,6 +26,40 @@ interface DashboardProps {
   modelId: string;
 }
 
+const translations: Record<string, string> = {
+    // performance
+    'mean_absolute_error': 'Erro Médio Absoluto',
+    'rmse': 'RMSE',
+    'mape': 'MAPE',
+    'r2': 'R²',
+    'directional_accuracy': 'Precisão Direcional',
+    // statistics
+    'forecast_mean': 'Média da Previsão',
+    'forecast_std': 'Desvio Padrão da Previsão',
+    'forecast_min': 'Mínimo da Previsão',
+    'forecast_max': 'Máximo da Previsão',
+    'forecast_median': 'Mediana da Previsão',
+    'forecast_percentile_25': 'Percentil 25',
+    'forecast_percentile_75': 'Percentil 75',
+    'volatility': 'Volatilidade',
+    'confidence_level': 'Nível de Confiança',
+    // trend
+    'overall_trend': 'Tendência Geral',
+    'trend_strength': 'Força da Tendência',
+    'slope': 'Inclinação',
+    'change_percent': '% de Mudança',
+    'volatility_forecast': 'Previsão de Volatilidade',
+    // reliability/risk
+    'high': 'Alta',
+    'medium': 'Média',
+    'low': 'Baixa',
+};
+
+const translateKey = (key: string) => {
+    const keyLower = key.toLowerCase();
+    return translations[keyLower] || key.replace(/_/g, ' ');
+};
+
 const StatCard = ({
   title,
   value,
@@ -102,7 +136,7 @@ export function Dashboard({ modelId }: DashboardProps) {
   if (!forecast) {
     return (
       <Card className="flex items-center justify-center p-8">
-        <AlertCircle className="mr-2" /> Could not load forecast data.
+        <AlertCircle className="mr-2" /> Não foi possível carregar os dados da previsão.
       </Card>
     );
   }
@@ -114,22 +148,22 @@ export function Dashboard({ modelId }: DashboardProps) {
       return value.toFixed(4);
     }
     if (typeof value === 'boolean') {
-      return value ? 'Yes' : 'No';
+      return value ? 'Sim' : 'Não';
     }
-    return value;
+    return translateKey(value);
   };
 
   return (
     <Tabs defaultValue="dashboard">
       <TabsList className="grid w-full grid-cols-3">
-        <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-        <TabsTrigger value="report">Technical Report</TabsTrigger>
-        <TabsTrigger value="metrics">Raw Metrics</TabsTrigger>
+        <TabsTrigger value="dashboard">Painel</TabsTrigger>
+        <TabsTrigger value="report">Relatório Técnico</TabsTrigger>
+        <TabsTrigger value="metrics">Métricas Brutas</TabsTrigger>
       </TabsList>
       <TabsContent value="dashboard" className="space-y-4">
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <StatCard
-            title="Recommendation"
+            title="Recomendação"
             value={performanceSummary?.recommendation || 'N/A'}
             icon={TrendingUp}
             color={
@@ -141,18 +175,18 @@ export function Dashboard({ modelId }: DashboardProps) {
             }
           />
           <StatCard
-            title="Model Confidence"
+            title="Confiança do Modelo"
             value={performanceSummary ? `${(performanceSummary.model_confidence * 100).toFixed(0)}%` : 'N/A'}
             icon={Zap}
           />
           <StatCard
-            title="Reliability"
-            value={performanceSummary?.prediction_reliability || 'N/A'}
+            title="Confiabilidade"
+            value={performanceSummary ? translateKey(performanceSummary.prediction_reliability) : 'N/A'}
             icon={CheckCircle}
           />
           <StatCard
-            title="Risk Level"
-            value={performanceSummary?.risk_level || 'N/A'}
+            title="Nível de Risco"
+            value={performanceSummary ? translateKey(performanceSummary.risk_level) : 'N/A'}
             icon={AlertCircle}
             color={
               performanceSummary?.risk_level === 'low'
@@ -165,7 +199,7 @@ export function Dashboard({ modelId }: DashboardProps) {
         </div>
         <Card>
           <CardHeader>
-            <CardTitle>Forecast Chart</CardTitle>
+            <CardTitle>Gráfico de Previsão</CardTitle>
             {summary ? <CardDescription>{summary}</CardDescription> : <Skeleton className="h-4 w-3/4" />}
           </CardHeader>
           <CardContent>
@@ -176,9 +210,9 @@ export function Dashboard({ modelId }: DashboardProps) {
       <TabsContent value="report">
         <Card>
           <CardHeader>
-            <CardTitle>AI-Generated Technical Analysis</CardTitle>
+            <CardTitle>Análise Técnica Gerada por IA</CardTitle>
             <CardDescription>
-              Detailed report based on multiple technical indicators.
+              Relatório detalhado com base em múltiplos indicadores técnicos.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -203,12 +237,12 @@ export function Dashboard({ modelId }: DashboardProps) {
       <TabsContent value="metrics">
         <div className="grid gap-4 md:grid-cols-2">
             <Card>
-                <CardHeader><CardTitle>Performance Metrics</CardTitle></CardHeader>
+                <CardHeader><CardTitle>Métricas de Desempenho</CardTitle></CardHeader>
                 <CardContent>
                     <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
                         {Object.entries(forecast.actual_vs_forecast).map(([key, value]) => (
                             <React.Fragment key={key}>
-                                <dt className="font-medium text-muted-foreground capitalize">{key.replace(/_/g, ' ')}</dt>
+                                <dt className="font-medium text-muted-foreground capitalize">{translateKey(key)}</dt>
                                 <dd className="font-mono">{renderValue(value)}</dd>
                             </React.Fragment>
                         ))}
@@ -216,12 +250,12 @@ export function Dashboard({ modelId }: DashboardProps) {
                 </CardContent>
             </Card>
             <Card>
-                <CardHeader><CardTitle>Forecast Statistics</CardTitle></CardHeader>
+                <CardHeader><CardTitle>Estatísticas da Previsão</CardTitle></CardHeader>
                 <CardContent>
                     <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
                         {Object.entries(forecast.statistics).map(([key, value]) => (
                             <React.Fragment key={key}>
-                                <dt className="font-medium text-muted-foreground capitalize">{key.replace(/_/g, ' ')}</dt>
+                                <dt className="font-medium text-muted-foreground capitalize">{translateKey(key)}</dt>
                                 <dd className="font-mono">{renderValue(value)}</dd>
                             </React.Fragment>
                         ))}
@@ -229,12 +263,12 @@ export function Dashboard({ modelId }: DashboardProps) {
                 </CardContent>
             </Card>
             {forecast.trend_analysis && <Card>
-                <CardHeader><CardTitle>Trend Analysis</CardTitle></CardHeader>
+                <CardHeader><CardTitle>Análise de Tendência</CardTitle></CardHeader>
                 <CardContent>
                      <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
                         {Object.entries(forecast.trend_analysis).map(([key, value]) => (
                             <React.Fragment key={key}>
-                                <dt className="font-medium text-muted-foreground capitalize">{key.replace(/_/g, ' ')}</dt>
+                                <dt className="font-medium text-muted-foreground capitalize">{translateKey(key)}</dt>
                                 <dd>{renderValue(value)}</dd>
                             </React.Fragment>
                         ))}
@@ -242,11 +276,11 @@ export function Dashboard({ modelId }: DashboardProps) {
                 </CardContent>
             </Card>}
             {forecast.anomalies?.detected && <Card>
-                <CardHeader><CardTitle>Anomalies Detected ({forecast.anomalies.count})</CardTitle></CardHeader>
+                <CardHeader><CardTitle>Anomalias Detectadas ({forecast.anomalies.count})</CardTitle></CardHeader>
                 <CardContent>
                     {forecast.anomalies.anomalies.map((anomaly, index) => (
                         <Badge key={index} variant="destructive" className="mr-2 mb-2">
-                            Period {anomaly.period}: {anomaly.anomaly_type}
+                            Período {anomaly.period}: {anomaly.anomaly_type}
                         </Badge>
                     ))}
                 </CardContent>

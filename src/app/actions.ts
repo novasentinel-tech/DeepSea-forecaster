@@ -8,8 +8,8 @@ export async function generatePerformanceSummary(input: ModelPerformanceSummaryI
     const result = await modelPerformanceSummary(input);
     return result.summary;
   } catch (error) {
-    console.error("Error generating performance summary:", error);
-    return "Could not generate performance summary.";
+    console.error("Erro ao gerar o resumo de desempenho:", error);
+    return "Não foi possível gerar o resumo de desempenho.";
   }
 }
 
@@ -18,16 +18,16 @@ export async function generateTechnicalAnalysisReport(input: DetailedTechnicalAn
     const result = await detailedTechnicalAnalysisReport(input);
     return result.report;
   } catch (error) {
-    console.error("Error generating technical analysis report:", error);
+    console.error("Erro ao gerar o relatório de análise técnica:", error);
     // This is a common error if the API is not running or misconfigured.
     if (error instanceof Error && (error.message.includes('API_KEY or API_HOST') || error.message.includes('ECONNREFUSED'))) {
-        return `### Could not generate Technical Analysis Report
+        return `### Não foi possível gerar o Relatório de Análise Técnica
         
-Please ensure the Python API server is running and the \`API_KEY\` and \`API_HOST\` environment variables are correctly set in your \`.env\` file.
+Verifique se o servidor da API Python está em execução e se as variáveis de ambiente \`API_KEY\` e \`API_HOST\` estão definidas corretamente no seu arquivo \`.env\`.
 
-**Details:**
+**Detalhes:**
 ${error.message}`;
     }
-    return "An unexpected error occurred while generating the technical analysis report.";
+    return "Ocorreu um erro inesperado ao gerar o relatório de análise técnica.";
   }
 }
