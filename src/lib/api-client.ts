@@ -8,15 +8,15 @@ import type {
 } from './types';
 
 export class TOTEMDeepseaClient {
-  private apiKey: string;
+  private apiKey: string | undefined;
   private apiHost: string;
 
   constructor() {
-    this.apiKey = process.env.NEXT_PUBLIC_API_KEY || "";
+    this.apiKey = process.env.NEXT_PUBLIC_API_KEY;
     this.apiHost = '/api';
     
     if (!this.apiKey) {
-      console.warn('API_KEY is not provided. Please set NEXT_PUBLIC_API_KEY in your .env file.');
+      console.warn('NEXT_PUBLIC_API_KEY is not provided. Please set it in your .env file.');
     }
   }
 
