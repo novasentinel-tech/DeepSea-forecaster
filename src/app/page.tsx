@@ -83,12 +83,11 @@ export default function Home() {
       console.error(error);
       toast({
         title: "Falha no Upload",
-        description: "Ocorreu um erro ao enviar seu arquivo.",
+        description: error instanceof Error ? error.message : "Ocorreu um erro ao enviar seu arquivo.",
         variant: "destructive",
       });
     } finally {
       setIsUploading(false);
-      // Reset file input
       if(fileInputRef.current) {
         fileInputRef.current.value = "";
       }
@@ -103,6 +102,10 @@ export default function Home() {
   const handleTrainModel = async (fileId: string, type: 'lstm' | 'prophet', params: any) => {
     setIsTraining(true);
     setIsDialogOpen(false);
+    toast({
+      title: "Treinamento Iniciado",
+      description: `Iniciando treinamento do modelo ${type} para o arquivo ${fileId}.`,
+    });
     try {
       let result;
       if (type === 'lstm') {
@@ -111,27 +114,34 @@ export default function Home() {
         result = await apiClient.trainProphet(fileId, params);
       }
       toast({
-        title: "Treinamento Iniciado",
-        description: `O modelo ${result.model_id} está treinando agora.`,
+        title: "Treinamento em Andamento",
+        description: `O modelo ${result.model_id} está treinando. Isso pode levar alguns minutos.`,
       });
-      // Poll for models until the new one appears
+
       const poll = setInterval(async () => {
-        const modelsRes = await apiClient.getModels();
-        if (modelsRes.models && modelsRes.models[result.model_id]) {
-          clearInterval(poll);
-          setModels(modelsRes.models);
-          setIsTraining(false);
-          toast({
-            title: "Treinamento Concluído",
-            description: `O modelo ${result.model_id} está pronto.`,
-          });
+        try {
+          const modelsRes = await apiClient.getModels();
+          if (modelsRes.models && modelsRes.models[result.model_id] && modelsRes.models[result.model_id].status === 'active') {
+            clearInterval(poll);
+            setModels(modelsRes.models);
+            setIsTraining(false);
+            toast({
+              title: "Treinamento Concluído",
+              description: `O modelo ${result.model_id} está pronto.`,
+              variant: 'default',
+              className: 'bg-green-500 text-white'
+            });
+          }
+        } catch (pollError) {
+          // Keep polling even if one check fails
+          console.error("Polling error:", pollError);
         }
       }, 5000);
     } catch (error) {
       console.error(error);
       toast({
         title: "Falha no Treinamento",
-        description: "Não foi possível iniciar o treinamento do modelo.",
+        description: error instanceof Error ? error.message : "Não foi possível iniciar o treinamento do modelo.",
         variant: "destructive",
       });
       setIsTraining(false);
@@ -252,10 +262,10 @@ export default function Home() {
           <Button 
             className="w-full" 
             onClick={() => fileInputRef.current?.click()} 
-            disabled={isUploading}
+            disabled={isUploading || isTraining}
           >
             <Upload className="mr-2 h-4 w-4" />
-            {isUploading ? "Enviando..." : "Enviar CSV"}
+            {isUploading ? "Enviando..." : (isTraining ? "Treinando..." : "Enviar CSV")}
           </Button>
         </SidebarFooter>
       </Sidebar>
@@ -271,7 +281,7 @@ export default function Home() {
             <Dashboard key={selectedModelId} modelId={selectedModelId} />
           )}
           {activeView === 'status' && (
-            <ApiStatusDashboard />
+            <ApiStatusDashboard apiClient={apiClient} />
           )}
           {activeView === 'dashboard' && !selectedModelId && (
              <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center rounded-lg border-2 border-dashed bg-card/50">

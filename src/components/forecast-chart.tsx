@@ -23,12 +23,12 @@ export function ForecastChart({ forecast }: ForecastChartProps) {
 
     const isLstm = forecast.model_type === 'lstm';
     
-    // LSTM has more detailed confidence intervals
-    const upper95 = isLstm && forecast.confidence_intervals 
+    // LSTM provides confidence intervals, Prophet provides uncertainties
+    const upperConfidence = isLstm && forecast.confidence_intervals 
       ? forecast.confidence_intervals.upper_bound_95.map((row) => row[0]) 
       : forecast.uncertainties?.confidence_interval_95.upper;
     
-    const lower95 = isLstm && forecast.confidence_intervals
+    const lowerConfidence = isLstm && forecast.confidence_intervals
       ? forecast.confidence_intervals.lower_bound_95.map((row) => row[0])
       : forecast.uncertainties?.confidence_interval_95.lower;
     
@@ -40,14 +40,14 @@ export function ForecastChart({ forecast }: ForecastChartProps) {
     return forecast.timestamps.dates.map((date, index) => ({
       date,
       Real: actual?.[index],
-      Previsão: forecast.forecast.values[index][0],
-      Confiança: upper95 && lower95 ? [lower95[index], upper95[index]] : undefined,
+      Previsão: forecast.forecast.values[index]?.[0],
+      Confiança: upperConfidence && lowerConfidence ? [lowerConfidence[index], upperConfidence[index]] : undefined,
     }));
   }, [forecast]);
 
   const yDomain = React.useMemo(() => {
     if (!chartData || chartData.length === 0) return [0, 100];
-    const allValues = chartData.flatMap(d => [d.Real, d.Previsão, ...(d.Confiança || [])]).filter(v => v != null);
+    const allValues = chartData.flatMap(d => [d.Real, d.Previsão, ...(d.Confiança || [])]).filter(v => v != null && !isNaN(v));
     if (allValues.length === 0) return [0, 100];
     
     const min = Math.min(...allValues);

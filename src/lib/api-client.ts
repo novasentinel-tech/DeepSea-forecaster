@@ -14,9 +14,7 @@ export class TOTEMDeepseaClient {
 
   constructor() {
     this.apiKey = process.env.NEXT_PUBLIC_API_KEY;
-    // Sempre use o caminho relativo para o proxy funcionar no lado do cliente.
-    // O servidor Next.js cuidará de reescrever isso para o host completo da API.
-    this.apiHost = '/api';
+    this.apiHost = '/api'; // Use relative path for the proxy
     
     if (!this.apiKey) {
       console.warn('A variável de ambiente NEXT_PUBLIC_API_KEY não está definida. A API pode falhar se for necessária autenticação.');
@@ -43,8 +41,9 @@ export class TOTEMDeepseaClient {
           headers,
         });
     } catch (e: any) {
-        console.error(`Erro de rede ao tentar acessar ${url}: ${e.message}`);
-        throw new Error(`Falha na conexão com a API. Verifique se o servidor está online e acessível em ${this.apiHost}.`);
+        const networkErrorMessage = `Erro de rede ao tentar acessar ${this.apiHost}${endpoint}: ${e.message}. Verifique sua conexão e se o servidor da API está em execução.`;
+        console.error(networkErrorMessage);
+        throw new Error(networkErrorMessage);
     }
 
     if (!response.ok) {
@@ -109,17 +108,19 @@ export class TOTEMDeepseaClient {
   }
 
   async getHealth(): Promise<HealthStatus> {
-    // O endpoint de saúde pode não exigir autenticação, então trate os erros potenciais com elegância
+    // This endpoint might not require authentication, so handle potential errors gracefully
     try {
-        return await this.request('/health');
-    } catch (e) {
-        // Uma verificação de saúde também pode ser feita na raiz
-        try {
-            return await this.request('/');
-        } catch (finalError) {
-            console.error("Ambas as tentativas de verificação de saúde falharam.", finalError);
-            throw finalError; // Re-lança o erro após o log
+        const response = await fetch(`${this.apiHost}/health`);
+        if (!response.ok) {
+           const rootResponse = await fetch(`${this.apiHost}/`);
+           if(!rootResponse.ok) {
+             throw new Error(`API health check failed: ${rootResponse.statusText}`)
+           }
+           return rootResponse.json()
         }
+        return response.json();
+    } catch (e: any) {
+        throw new Error(`Falha ao verificar o status da API: ${e.message}`);
     }
   }
 }

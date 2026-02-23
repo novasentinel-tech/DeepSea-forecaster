@@ -16,10 +16,9 @@ import {
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertCircle, CheckCircle, TrendingUp, Zap, BarChart2 } from "lucide-react";
+import { AlertCircle, CheckCircle, TrendingUp, Zap } from "lucide-react";
 import { ForecastChart } from "./forecast-chart";
 import { Badge } from "./ui/badge";
-
 import { Remarkable } from 'remarkable';
 
 interface DashboardProps {
@@ -87,6 +86,7 @@ export function Dashboard({ modelId }: DashboardProps) {
   const [summary, setSummary] = React.useState<string | null>(null);
   const [report, setReport] = React.useState<string | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
   const apiClient = React.useMemo(() => new TOTEMDeepseaClient(), []);
   
   const md = new Remarkable({ html: true });
@@ -95,12 +95,13 @@ export function Dashboard({ modelId }: DashboardProps) {
     async function loadData() {
       if (!modelId) return;
       setIsLoading(true);
+      setError(null);
       setForecast(null);
       setSummary(null);
       setReport(null);
 
       try {
-        const forecastData = modelId.includes("lstm")
+        const forecastData = modelId.startsWith("lstm")
           ? await apiClient.forecastLSTM(modelId)
           : await apiClient.forecastProphet(modelId);
         
@@ -117,11 +118,13 @@ export function Dashboard({ modelId }: DashboardProps) {
 
         generateTechnicalAnalysisReport({
           modelId,
-          periods: 24,
+          periods: forecastData.periods,
         }).then(setReport);
 
       } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "Ocorreu um erro desconhecido.";
         console.error("Failed to load dashboard data:", error);
+        setError(errorMessage);
       } finally {
         setIsLoading(false);
       }
@@ -133,10 +136,15 @@ export function Dashboard({ modelId }: DashboardProps) {
     return <DashboardSkeleton />;
   }
 
-  if (!forecast) {
+  if (error || !forecast) {
     return (
-      <Card className="flex items-center justify-center p-8">
-        <AlertCircle className="mr-2" /> Não foi possível carregar os dados da previsão.
+      <Card className="flex flex-col items-center justify-center p-8 bg-destructive/10 border-destructive">
+        <AlertCircle className="h-12 w-12 text-destructive" />
+        <CardTitle className="mt-4 text-destructive">Não foi possível carregar os dados da previsão</CardTitle>
+        <CardDescription className="mt-2 text-center text-destructive/80">
+          Ocorreu um erro ao buscar os dados do modelo. Verifique o status da API ou tente novamente.
+        </CardDescription>
+        <p className="mt-4 text-xs text-muted-foreground font-mono bg-destructive/10 p-2 rounded-md">{error}</p>
       </Card>
     );
   }
@@ -150,7 +158,7 @@ export function Dashboard({ modelId }: DashboardProps) {
     if (typeof value === 'boolean') {
       return value ? 'Sim' : 'Não';
     }
-    return translateKey(value);
+    return translateKey(String(value));
   };
 
   return (
@@ -238,7 +246,7 @@ export function Dashboard({ modelId }: DashboardProps) {
       </TabsContent>
       <TabsContent value="metrics">
         <div className="grid gap-4 md:grid-cols-2">
-            <Card>
+            {forecast.actual_vs_forecast && <Card>
                 <CardHeader><CardTitle>Métricas de Desempenho</CardTitle></CardHeader>
                 <CardContent>
                     <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
@@ -250,8 +258,8 @@ export function Dashboard({ modelId }: DashboardProps) {
                         ))}
                     </dl>
                 </CardContent>
-            </Card>
-            <Card>
+            </Card>}
+            {forecast.statistics && <Card>
                 <CardHeader><CardTitle>Estatísticas da Previsão</CardTitle></CardHeader>
                 <CardContent>
                     <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
@@ -263,7 +271,7 @@ export function Dashboard({ modelId }: DashboardProps) {
                         ))}
                     </dl>
                 </CardContent>
-            </Card>
+            </Card>}
             {forecast.trend_analysis && <Card>
                 <CardHeader><CardTitle>Análise de Tendência</CardTitle></CardHeader>
                 <CardContent>

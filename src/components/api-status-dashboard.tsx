@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertCircle, CheckCircle, Server } from "lucide-react";
+import { AlertCircle, CheckCircle, Server, HardDrive, BrainCircuit } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -33,13 +33,16 @@ const StatCard = ({
   </Card>
 );
 
-export function ApiStatusDashboard() {
+interface ApiStatusDashboardProps {
+    apiClient: TOTEMDeepseaClient;
+}
+
+export function ApiStatusDashboard({ apiClient }: ApiStatusDashboardProps) {
   const [status, setStatus] = React.useState<HealthStatus | null>(null);
   const [files, setFiles] = React.useState<FileList | null>(null);
   const [models, setModels] = React.useState<ModelList | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
-  const apiClient = React.useMemo(() => new TOTEMDeepseaClient(), []);
 
   React.useEffect(() => {
     async function loadStatus() {
@@ -62,7 +65,7 @@ export function ApiStatusDashboard() {
       }
     }
     loadStatus();
-    const interval = setInterval(loadStatus, 30000); // Refresh every 30 seconds
+    const interval = setInterval(loadStatus, 15000); // Refresh every 15 seconds
     return () => clearInterval(interval);
   }, [apiClient]);
 
@@ -117,17 +120,17 @@ export function ApiStatusDashboard() {
         />
         <StatCard
             title="Arquivos Carregados"
-            value={status?.dataframes_in_memory ?? 'N/A'}
-            icon={Server}
+            value={status?.files_uploaded ?? files?.total ?? 'N/A'}
+            icon={HardDrive}
         />
         <StatCard
-            title="Modelos em Memória"
-            value={status?.models_in_memory ?? 'N/A'}
-            icon={Server}
+            title="Modelos Carregados"
+            value={status?.models_loaded ?? models?.total ?? 'N/A'}
+            icon={BrainCircuit}
         />
         <StatCard
-            title="Última Verificação"
-            value={status ? format(new Date(status.timestamp), "HH:mm:ss", { locale: ptBR }) : 'N/A'}
+            title="Versão da API"
+            value={status?.version ?? 'N/A'}
             icon={Server}
         />
       </div>
@@ -183,7 +186,7 @@ export function ApiStatusDashboard() {
                         <TableRow key={id}>
                             <TableCell className="font-mono text-xs truncate max-w-[200px] block">{id}</TableCell>
                             <TableCell><Badge variant={model.type === 'lstm' ? "default" : "secondary"}>{model.type.toUpperCase()}</Badge></TableCell>
-                            <TableCell><Badge variant={model.status === 'active' ? "outline" : "destructive"}>{model.status}</Badge></TableCell>
+                            <TableCell><Badge className={model.status === 'active' ? 'bg-green-500' : 'bg-yellow-500'}>{model.status}</Badge></TableCell>
                         </TableRow>
                     )) : (
                          <TableRow>

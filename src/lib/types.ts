@@ -90,7 +90,7 @@ export interface ForecastData {
     actual_last_24?: number[][];
     actual?: number[];
     forecast_24?: number[][];
-    forecast: number[];
+    forecast?: number[]; // Can be null for prophet
     mean_absolute_error?: number;
     rmse: number;
     mape: number;
@@ -129,7 +129,7 @@ export interface ForecastData {
     trend: number[];
     yearly_seasonality: number[];
     weekly_seasonality: number[];
-    monthly_seasonality: number[];
+    monthly_seasonality?: number[];
     holiday_effects: any[];
   };
 
