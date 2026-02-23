@@ -155,7 +155,7 @@ export function Dashboard({ modelId }: DashboardProps) {
 
   return (
     <Tabs defaultValue="dashboard">
-      <TabsList className="grid w-full grid-cols-3">
+      <TabsList className="mb-4">
         <TabsTrigger value="dashboard">Painel</TabsTrigger>
         <TabsTrigger value="report">Relatório Técnico</TabsTrigger>
         <TabsTrigger value="metrics">Métricas Brutas</TabsTrigger>
@@ -178,11 +178,13 @@ export function Dashboard({ modelId }: DashboardProps) {
             title="Confiança do Modelo"
             value={performanceSummary ? `${(performanceSummary.model_confidence * 100).toFixed(0)}%` : 'N/A'}
             icon={Zap}
+            color="text-cyan-400"
           />
           <StatCard
             title="Confiabilidade"
             value={performanceSummary ? translateKey(performanceSummary.prediction_reliability) : 'N/A'}
             icon={CheckCircle}
+            color="text-green-400"
           />
           <StatCard
             title="Nível de Risco"

@@ -38,6 +38,17 @@ export interface Anomaly {
   anomaly_type: string;
 }
 
+export interface HealthStatus {
+  status: string;
+  timestamp: string;
+  models_in_memory?: number;
+  dataframes_in_memory?: number;
+  version?: string;
+  name?: string;
+  models_loaded?: number;
+  files_uploaded?: number;
+}
+
 export interface ForecastData {
   model_id: string;
   model_type: 'lstm' | 'prophet';

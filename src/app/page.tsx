@@ -19,11 +19,12 @@ import {
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { TOTEMDeepseaClient } from "@/lib/api-client";
-import type { FileDetails, ModelDetails, FileList, ModelList } from "@/lib/types";
-import { Upload, FileText, BrainCircuit, BarChart, Package } from "lucide-react";
+import type { FileDetails, ModelDetails } from "@/lib/types";
+import { Upload, FileText, BrainCircuit, BarChart, Package, Server } from "lucide-react";
 import { ModelTrainingDialog } from "@/components/model-training-dialog";
 import { Dashboard } from "@/components/dashboard";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ApiStatusDashboard } from "@/components/api-status-dashboard";
 
 export default function Home() {
   const { toast } = useToast();
@@ -37,6 +38,7 @@ export default function Home() {
   const [isDialogOpen, setIsDialogOpen] = React.useState(false);
   const [selectedFileForTraining, setSelectedFileForTraining] = React.useState<string | null>(null);
   const [selectedModelId, setSelectedModelId] = React.useState<string | null>(null);
+  const [activeView, setActiveView] = React.useState<"dashboard" | "status">("dashboard");
 
   const isLoadingData = files === null || models === null;
 
@@ -149,6 +151,21 @@ export default function Home() {
       new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
   }, [files]);
+  
+  const handleSelectModel = (modelId: string) => {
+    setSelectedModelId(modelId);
+    setActiveView("dashboard");
+  };
+
+  const handleSelectStatus = () => {
+    setSelectedModelId(null);
+    setActiveView("status");
+  }
+
+  const PageTitle: Record<"dashboard" | "status", string> = {
+    dashboard: "Painel de Previsão",
+    status: "Status do Servidor da API"
+  }
 
 
   return (
@@ -203,7 +220,7 @@ export default function Home() {
               ))}
               {sortedModels.map(([id, model]) => (
                 <SidebarMenuItem key={id}>
-                  <SidebarMenuButton onClick={() => setSelectedModelId(id)} isActive={selectedModelId === id} tooltip={id}>
+                  <SidebarMenuButton onClick={() => handleSelectModel(id)} isActive={selectedModelId === id && activeView === 'dashboard'} tooltip={id}>
                     <Package className={model.type === 'lstm' ? 'text-blue-400' : 'text-purple-400'}/>
                     <span className="truncate">{model.type}-{model.file_id.replace('file_', '')}</span>
                   </SidebarMenuButton>
@@ -214,6 +231,21 @@ export default function Home() {
               }
             </SidebarMenu>
           </SidebarGroup>
+          
+           <SidebarSeparator />
+
+          <SidebarGroup>
+             <SidebarGroupLabel>Sistema</SidebarGroupLabel>
+             <SidebarMenu>
+                <SidebarMenuItem>
+                    <SidebarMenuButton onClick={handleSelectStatus} isActive={activeView === 'status'}>
+                        <Server />
+                        <span>Status da API</span>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+             </SidebarMenu>
+          </SidebarGroup>
+
         </SidebarContent>
         <SidebarFooter>
           <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".csv" className="hidden" />
@@ -231,19 +263,23 @@ export default function Home() {
       <SidebarInset>
         <div className="flex h-14 items-center gap-2 border-b bg-card px-4">
           <SidebarTrigger className="h-8 w-8 shrink-0" />
-          <h2 className="text-lg font-semibold font-headline">Painel de Previsão</h2>
+          <h2 className="text-lg font-semibold font-headline">{PageTitle[activeView]}</h2>
         </div>
 
-        <main className="flex-1 overflow-auto p-4 md:p-6">
-          {selectedModelId ? (
+        <main className="flex-1 overflow-auto p-4 md:p-6 bg-background/40">
+           {activeView === 'dashboard' && selectedModelId && (
             <Dashboard key={selectedModelId} modelId={selectedModelId} />
-          ) : (
-            <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center rounded-lg border-2 border-dashed bg-card">
+          )}
+          {activeView === 'status' && (
+            <ApiStatusDashboard />
+          )}
+          {activeView === 'dashboard' && !selectedModelId && (
+             <div className="flex h-[calc(100vh-10rem)] w-full items-center justify-center rounded-lg border-2 border-dashed bg-card/50">
               <div className="text-center">
                 <BarChart className="mx-auto h-12 w-12 text-muted-foreground" />
                 <h3 className="mt-4 text-lg font-semibold">Bem-vindo ao Previsor DeepSea</h3>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  Selecione um modelo na barra lateral para ver sua previsão, <br /> ou envie um CSV para começar.
+                  Selecione um modelo ou status da API na barra lateral para começar.
                 </p>
               </div>
             </div>

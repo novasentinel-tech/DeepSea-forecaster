@@ -4,7 +4,8 @@ import type {
   ForecastData,
   TrainLSTMResponse,
   TrainProphetResponse,
-  UploadCSVResponse
+  UploadCSVResponse,
+  HealthStatus
 } from './types';
 
 export class TOTEMDeepseaClient {
@@ -13,10 +14,10 @@ export class TOTEMDeepseaClient {
 
   constructor() {
     this.apiKey = process.env.NEXT_PUBLIC_API_KEY;
-    this.apiHost = '/api';
+    this.apiHost = process.env.NEXT_PUBLIC_API_HOST || '/api';
     
     if (!this.apiKey) {
-      console.warn('A variável de ambiente NEXT_PUBLIC_API_KEY não está definida. Por favor, configure-a no seu arquivo .env.');
+      console.warn('A variável de ambiente NEXT_PUBLIC_API_KEY não está definida. A API pode falhar se for necessária autenticação.');
     }
   }
 
@@ -33,14 +34,20 @@ export class TOTEMDeepseaClient {
       headers.set('Content-Type', 'application/json');
     }
 
-    const response = await fetch(url, {
-      ...options,
-      headers,
-    });
+    let response;
+    try {
+        response = await fetch(url, {
+          ...options,
+          headers,
+        });
+    } catch (e: any) {
+        console.error(`Erro de rede ao tentar acessar ${url}: ${e.message}`);
+        throw new Error(`Falha na conexão com a API. Verifique se o servidor está online e acessível em ${this.apiHost}.`);
+    }
 
     if (!response.ok) {
       const errorText = await response.text();
-      const errorMessage = `Erro na API (${response.status}): ${errorText}`;
+      const errorMessage = `Erro na API (${response.status} ${response.statusText}): ${errorText}`;
       console.error(errorMessage);
       throw new Error(errorMessage);
     }
@@ -97,5 +104,20 @@ export class TOTEMDeepseaClient {
 
   async getTechnicalAnalysis(modelId: string, periods = 24): Promise<any> {
     return this.request(`/technical_analysis/${modelId}?periods=${periods}`);
+  }
+
+  async getHealth(): Promise<HealthStatus> {
+    // The health endpoint might not require auth, so handle potential errors gracefully
+    try {
+        return await this.request('/health');
+    } catch (e) {
+        // A health check can also be done on the root
+        try {
+            return await this.request('/');
+        } catch (finalError) {
+            console.error("Ambas as tentativas de verificação de saúde falharam.", finalError);
+            throw finalError; // Re-throw the error after logging
+        }
+    }
   }
 }
