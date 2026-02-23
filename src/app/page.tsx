@@ -153,9 +153,7 @@ export default function Home() {
       <Sidebar>
         <SidebarHeader>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="h-7 w-7 md:hidden">
-              <SidebarTrigger />
-            </Button>
+            <SidebarTrigger className="md:hidden" />
             <div className="flex items-center gap-2 group-data-[collapsible=icon]:hidden">
               <BarChart className="size-6 text-accent" />
               <h1 className="text-lg font-semibold font-headline">DeepSea</h1>
@@ -229,9 +227,7 @@ export default function Home() {
 
       <SidebarInset>
         <div className="flex h-14 items-center gap-2 border-b bg-card px-4">
-          <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
-            <SidebarTrigger />
-          </Button>
+          <SidebarTrigger className="h-8 w-8 shrink-0" />
           <h2 className="text-lg font-semibold font-headline">Forecasting Dashboard</h2>
         </div>
 
