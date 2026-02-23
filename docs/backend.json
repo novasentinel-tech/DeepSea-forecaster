@@ -1,0 +1,1084 @@
+{
+  "entities": {
+    "UploadedFile": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UploadedFile",
+      "type": "object",
+      "description": "Represents metadata about a CSV file uploaded by the user, including its structure and size.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the uploaded file entity."
+        },
+        "fileName": {
+          "type": "string",
+          "description": "The original name of the uploaded CSV file."
+        },
+        "rows": {
+          "type": "number",
+          "description": "The total number of rows (data entries) found in the uploaded file."
+        },
+        "columns": {
+          "type": "array",
+          "description": "A list of all column headers present in the uploaded file.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "datetimeColumn": {
+          "type": "string",
+          "description": "The name of the column identified as containing datetime information."
+        },
+        "numericColumns": {
+          "type": "array",
+          "description": "A list of column names identified as containing numeric data, suitable for analysis.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "uploadedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the file was successfully uploaded.",
+          "format": "date-time"
+        },
+        "sizeMb": {
+          "type": "number",
+          "description": "The size of the uploaded file in megabytes."
+        },
+        "memoryUsageMb": {
+          "type": "number",
+          "description": "The estimated memory usage of the file's data in megabytes after processing."
+        }
+      },
+      "required": [
+        "id",
+        "fileName",
+        "rows",
+        "columns",
+        "datetimeColumn",
+        "numericColumns",
+        "uploadedAt"
+      ]
+    },
+    "LstmModel": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "LstmModel",
+      "type": "object",
+      "description": "Stores configuration, training parameters, and performance metrics for a trained LSTM (Long Short-Term Memory) deep learning model.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the LSTM model entity."
+        },
+        "fileId": {
+          "type": "string",
+          "description": "Reference to the UploadedFile entity that was used to train this LSTM model. (Relationship: UploadedFile 1:N LstmModel)"
+        },
+        "modelType": {
+          "type": "string",
+          "description": "The type of the forecasting model, always 'lstm' for this entity."
+        },
+        "rowsUsed": {
+          "type": "number",
+          "description": "The number of rows from the dataset actually used for training after preprocessing."
+        },
+        "features": {
+          "type": "number",
+          "description": "The number of features (columns) used as input for the LSTM model."
+        },
+        "lookback": {
+          "type": "number",
+          "description": "The number of previous time steps to consider as input for predicting the next time step."
+        },
+        "epochs": {
+          "type": "number",
+          "description": "The maximum number of times the entire training dataset was passed forward and backward through the neural network."
+        },
+        "batchSize": {
+          "type": "number",
+          "description": "The number of samples processed before the model's internal parameters are updated during training."
+        },
+        "learningRate": {
+          "type": "number",
+          "description": "The learning rate used by the optimizer during model training."
+        },
+        "optimizer": {
+          "type": "string",
+          "description": "The optimization algorithm used during training (e.g., 'adam')."
+        },
+        "lossFunction": {
+          "type": "string",
+          "description": "The loss function used to measure the difference between predicted and actual values (e.g., 'mse')."
+        },
+        "mae": {
+          "type": "number",
+          "description": "Mean Absolute Error, a metric indicating the average magnitude of errors in a set of predictions."
+        },
+        "rmse": {
+          "type": "number",
+          "description": "Root Mean Squared Error, a metric representing the square root of the average of the squared errors."
+        },
+        "mape": {
+          "type": "number",
+          "description": "Mean Absolute Percentage Error, a measure of prediction accuracy expressed as a percentage."
+        },
+        "r2": {
+          "type": "number",
+          "description": "R-squared value, indicating the proportion of variance in the dependent variable that can be predicted from the independent variables."
+        },
+        "directionalAccuracy": {
+          "type": "number",
+          "description": "The accuracy of the model in predicting the direction of change (up or down)."
+        },
+        "trainLossHistory": {
+          "type": "array",
+          "description": "An array representing the loss values recorded at each epoch during model training.",
+          "items": {
+            "type": "number"
+          }
+        },
+        "epochsCompleted": {
+          "type": "number",
+          "description": "The actual number of epochs completed during training, considering early stopping."
+        },
+        "earlyStoppingPatience": {
+          "type": "number",
+          "description": "The number of epochs with no improvement after which training will be stopped."
+        },
+        "stoppedAtEpoch": {
+          "type": "number",
+          "description": "The epoch number at which training was stopped due to early stopping."
+        },
+        "totalParameters": {
+          "type": "number",
+          "description": "The total number of parameters in the LSTM model."
+        },
+        "trainableParameters": {
+          "type": "number",
+          "description": "The number of parameters in the LSTM model that are updated during training."
+        },
+        "inputLayerInfo": {
+          "type": "string",
+          "description": "Description of the LSTM model's input layer configuration."
+        },
+        "lstm1LayerInfo": {
+          "type": "string",
+          "description": "Description of the first LSTM layer configuration."
+        },
+        "dropout1LayerInfo": {
+          "type": "string",
+          "description": "Description of the first Dropout layer configuration."
+        },
+        "lstm2LayerInfo": {
+          "type": "string",
+          "description": "Description of the second LSTM layer configuration."
+        },
+        "dropout2LayerInfo": {
+          "type": "string",
+          "description": "Description of the second Dropout layer configuration."
+        },
+        "denseLayerInfo": {
+          "type": "string",
+          "description": "Description of the dense (output) layer configuration."
+        },
+        "dataDateRangeStart": {
+          "type": "string",
+          "description": "The start date of the data range used for training the model.",
+          "format": "date"
+        },
+        "dataDateRangeEnd": {
+          "type": "string",
+          "description": "The end date of the data range used for training the model.",
+          "format": "date"
+        },
+        "missingValues": {
+          "type": "number",
+          "description": "The number of missing values identified and handled during data preprocessing."
+        },
+        "outliersRemoved": {
+          "type": "number",
+          "description": "The number of outliers detected and removed during data preprocessing."
+        },
+        "normalizationMethod": {
+          "type": "string",
+          "description": "The method used for normalizing the input data (e.g., 'MinMaxScaler')."
+        },
+        "trainingTimeSeconds": {
+          "type": "number",
+          "description": "The total time in seconds taken to train the model."
+        },
+        "inferenceTimeMs": {
+          "type": "number",
+          "description": "The average time in milliseconds taken for the model to make a prediction."
+        },
+        "memoryUsageMb": {
+          "type": "number",
+          "description": "The estimated memory usage of the trained model in megabytes."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the LSTM model was trained and created.",
+          "format": "date-time"
+        },
+        "expiresAt": {
+          "type": "string",
+          "description": "Optional timestamp indicating when the model or its data is scheduled to expire.",
+          "format": "date-time"
+        },
+        "status": {
+          "type": "string",
+          "description": "The current status of the model (e.g., 'active', 'archived', 'failed')."
+        },
+        "predictionsCount": {
+          "type": "number",
+          "description": "The number of times this model has been used to generate a forecast."
+        }
+      },
+      "required": [
+        "id",
+        "fileId",
+        "modelType",
+        "rowsUsed",
+        "features",
+        "lookback",
+        "epochs",
+        "batchSize",
+        "learningRate",
+        "optimizer",
+        "lossFunction",
+        "mae",
+        "rmse",
+        "mape",
+        "r2",
+        "directionalAccuracy",
+        "trainLossHistory",
+        "epochsCompleted",
+        "totalParameters",
+        "trainableParameters",
+        "inputLayerInfo",
+        "lstm1LayerInfo",
+        "dropout1LayerInfo",
+        "lstm2LayerInfo",
+        "dropout2LayerInfo",
+        "denseLayerInfo",
+        "dataDateRangeStart",
+        "dataDateRangeEnd",
+        "missingValues",
+        "outliersRemoved",
+        "normalizationMethod",
+        "trainingTimeSeconds",
+        "createdAt",
+        "status",
+        "predictionsCount"
+      ]
+    },
+    "ProphetModel": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ProphetModel",
+      "type": "object",
+      "description": "Stores configuration, training parameters, and performance metrics for a trained Facebook Prophet time series model.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Prophet model entity."
+        },
+        "fileId": {
+          "type": "string",
+          "description": "Reference to the UploadedFile entity that was used to train this Prophet model. (Relationship: UploadedFile 1:N ProphetModel)"
+        },
+        "modelType": {
+          "type": "string",
+          "description": "The type of the forecasting model, always 'prophet' for this entity."
+        },
+        "growth": {
+          "type": "string",
+          "description": "The type of growth model used (e.g., 'linear', 'logistic')."
+        },
+        "changepointPriorScale": {
+          "type": "number",
+          "description": "The flexibility of the automatic changepoint selection for trend changes."
+        },
+        "seasonalityPriorScale": {
+          "type": "number",
+          "description": "The strength of the seasonality effect."
+        },
+        "seasonalityMode": {
+          "type": "string",
+          "description": "The mode for seasonality (e.g., 'additive', 'multiplicative')."
+        },
+        "yearlySeasonality": {
+          "type": "boolean",
+          "description": "Indicates whether yearly seasonality was modeled."
+        },
+        "weeklySeasonality": {
+          "type": "boolean",
+          "description": "Indicates whether weekly seasonality was modeled."
+        },
+        "dailySeasonality": {
+          "type": "boolean",
+          "description": "Indicates whether daily seasonality was modeled."
+        },
+        "intervalWidth": {
+          "type": "number",
+          "description": "The width of the uncertainty interval for the forecast (e.g., 0.95 for 95% confidence)."
+        },
+        "yearlySeasonalityAmplitude": {
+          "type": "number",
+          "description": "The amplitude of the detected yearly seasonality."
+        },
+        "yearlySeasonalityPhase": {
+          "type": "number",
+          "description": "The phase of the detected yearly seasonality."
+        },
+        "yearlySeasonalityDetected": {
+          "type": "boolean",
+          "description": "Indicates if a significant yearly seasonality was detected."
+        },
+        "weeklySeasonalityAmplitude": {
+          "type": "number",
+          "description": "The amplitude of the detected weekly seasonality."
+        },
+        "weeklySeasonalityPhase": {
+          "type": "number",
+          "description": "The phase of the detected weekly seasonality."
+        },
+        "weeklySeasonalityDetected": {
+          "type": "boolean",
+          "description": "Indicates if a significant weekly seasonality was detected."
+        },
+        "monthlySeasonalityAmplitude": {
+          "type": "number",
+          "description": "The amplitude of the detected monthly seasonality."
+        },
+        "monthlySeasonalityPhase": {
+          "type": "number",
+          "description": "The phase of the detected monthly seasonality."
+        },
+        "monthlySeasonalityDetected": {
+          "type": "boolean",
+          "description": "Indicates if a significant monthly seasonality was detected."
+        },
+        "currentTrend": {
+          "type": "string",
+          "description": "The current overall trend direction identified by Prophet (e.g., 'upward', 'downward', 'sideways')."
+        },
+        "trendStrength": {
+          "type": "number",
+          "description": "A quantitative measure of the strength of the detected trend."
+        },
+        "changepoints": {
+          "type": "array",
+          "description": "A list of significant dates where the trend changed direction or magnitude.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "mape": {
+          "type": "number",
+          "description": "Mean Absolute Percentage Error, a metric indicating the average magnitude of errors as a percentage."
+        },
+        "mae": {
+          "type": "number",
+          "description": "Mean Absolute Error, a metric indicating the average magnitude of errors in predictions."
+        },
+        "rmse": {
+          "type": "number",
+          "description": "Root Mean Squared Error, a metric representing the square root of the average of the squared errors."
+        },
+        "rowsTrained": {
+          "type": "number",
+          "description": "The number of rows from the dataset used for training the Prophet model."
+        },
+        "dataDateRangeStart": {
+          "type": "string",
+          "description": "The start date of the data range used for training the model.",
+          "format": "date"
+        },
+        "dataDateRangeEnd": {
+          "type": "string",
+          "description": "The end date of the data range used for training the model.",
+          "format": "date"
+        },
+        "modelComponentsTrend": {
+          "type": "string",
+          "description": "The type of trend component used in the model."
+        },
+        "modelComponentsSeasonalities": {
+          "type": "array",
+          "description": "A list of seasonality components included in the model (e.g., 'yearly', 'weekly').",
+          "items": {
+            "type": "string"
+          }
+        },
+        "modelComponentsRegressors": {
+          "type": "array",
+          "description": "A list of additional regressors used in the model.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "modelComponentsHolidays": {
+          "type": "array",
+          "description": "A list of holiday effects included in the model.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "trainingTimeSeconds": {
+          "type": "number",
+          "description": "The total time in seconds taken to train the Prophet model."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the Prophet model was trained and created.",
+          "format": "date-time"
+        },
+        "predictionsCount": {
+          "type": "number",
+          "description": "The number of times this model has been used to generate a forecast."
+        }
+      },
+      "required": [
+        "id",
+        "fileId",
+        "modelType",
+        "growth",
+        "changepointPriorScale",
+        "seasonalityPriorScale",
+        "seasonalityMode",
+        "yearlySeasonality",
+        "weeklySeasonality",
+        "dailySeasonality",
+        "intervalWidth",
+        "yearlySeasonalityAmplitude",
+        "yearlySeasonalityPhase",
+        "yearlySeasonalityDetected",
+        "weeklySeasonalityAmplitude",
+        "weeklySeasonalityPhase",
+        "weeklySeasonalityDetected",
+        "currentTrend",
+        "trendStrength",
+        "changepoints",
+        "mape",
+        "mae",
+        "rmse",
+        "rowsTrained",
+        "dataDateRangeStart",
+        "dataDateRangeEnd",
+        "modelComponentsTrend",
+        "modelComponentsSeasonalities",
+        "modelComponentsRegressors",
+        "modelComponentsHolidays",
+        "trainingTimeSeconds",
+        "createdAt",
+        "predictionsCount"
+      ]
+    },
+    "Forecast": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Forecast",
+      "type": "object",
+      "description": "Stores the results and detailed analysis of a single forecasting operation, including predicted values, metrics, and technical indicators.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the forecast entity."
+        },
+        "modelId": {
+          "type": "string",
+          "description": "Reference to the LstmModel or ProphetModel entity that generated this forecast. (Relationship: Model 1:N Forecast)"
+        },
+        "modelType": {
+          "type": "string",
+          "description": "The type of the model that generated this forecast ('lstm' or 'prophet')."
+        },
+        "forecastDate": {
+          "type": "string",
+          "description": "Timestamp indicating when this specific forecast was generated.",
+          "format": "date-time"
+        },
+        "periods": {
+          "type": "number",
+          "description": "The number of future time periods for which the forecast was made."
+        },
+        "forecastValues": {
+          "type": "array",
+          "description": "An array of arrays representing the forecasted values for each column over the forecast periods.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "forecastColumnNames": {
+          "type": "array",
+          "description": "The names of the columns corresponding to the forecasted values.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "timestampsDates": {
+          "type": "array",
+          "description": "A list of dates corresponding to each forecast period.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "timestampsDatetimes": {
+          "type": "array",
+          "description": "A list of full datetimes corresponding to each forecast period.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "timestampsUnixTimestamps": {
+          "type": "array",
+          "description": "A list of Unix timestamps corresponding to each forecast period.",
+          "items": {
+            "type": "number"
+          }
+        },
+        "timestampsInterval": {
+          "type": "string",
+          "description": "The interval of the time series data (e.g., '1h', '1d', '1w')."
+        },
+        "timestampsTimezone": {
+          "type": "string",
+          "description": "The timezone used for the timestamps (e.g., 'UTC')."
+        },
+        "confidenceIntervalsLower95": {
+          "type": "array",
+          "description": "An array of arrays representing the lower bounds of the 95% confidence interval for each forecasted column.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "confidenceIntervalsUpper95": {
+          "type": "array",
+          "description": "An array of arrays representing the upper bounds of the 95% confidence interval for each forecasted column.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "actualLastData": {
+          "type": "array",
+          "description": "An array of arrays representing the actual historical data points immediately preceding the forecast.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "mae": {
+          "type": "number",
+          "description": "Mean Absolute Error calculated between actual and forecasted values for the comparison period."
+        },
+        "rmse": {
+          "type": "number",
+          "description": "Root Mean Squared Error calculated between actual and forecasted values for the comparison period."
+        },
+        "mape": {
+          "type": "number",
+          "description": "Mean Absolute Percentage Error calculated between actual and forecasted values for the comparison period."
+        },
+        "r2": {
+          "type": "number",
+          "description": "R-squared value indicating the goodness of fit between actual and forecasted values for the comparison period. (Typically for LSTM)"
+        },
+        "directionalAccuracy": {
+          "type": "number",
+          "description": "The accuracy of the forecast in predicting the direction of change. (Typically for LSTM)"
+        },
+        "forecastMean": {
+          "type": "number",
+          "description": "The mean of the forecasted values."
+        },
+        "forecastStd": {
+          "type": "number",
+          "description": "The standard deviation of the forecasted values."
+        },
+        "forecastMin": {
+          "type": "number",
+          "description": "The minimum value within the forecast range."
+        },
+        "forecastMax": {
+          "type": "number",
+          "description": "The maximum value within the forecast range."
+        },
+        "forecastMedian": {
+          "type": "number",
+          "description": "The median value within the forecast range."
+        },
+        "forecastPercentile25": {
+          "type": "number",
+          "description": "The 25th percentile of the forecasted values."
+        },
+        "forecastPercentile75": {
+          "type": "number",
+          "description": "The 75th percentile of the forecasted values."
+        },
+        "forecastVolatility": {
+          "type": "number",
+          "description": "The volatility measure of the forecasted series."
+        },
+        "rsiValues": {
+          "type": "array",
+          "description": "An array of Relative Strength Index (RSI) values for the forecast periods.",
+          "items": {
+            "type": "number"
+          }
+        },
+        "rsiOverbought": {
+          "type": "boolean",
+          "description": "Indicates if the RSI suggests an overbought condition."
+        },
+        "rsiOversold": {
+          "type": "boolean",
+          "description": "Indicates if the RSI suggests an oversold condition."
+        },
+        "rsiSignal": {
+          "type": "string",
+          "description": "The interpreted signal from the RSI (e.g., 'neutral', 'buy', 'sell')."
+        },
+        "macdLine": {
+          "type": "array",
+          "description": "An array of MACD line values for the forecast periods.",
+          "items": {
+            "type": "number"
+          }
+        },
+        "signalLine": {
+          "type": "array",
+          "description": "An array of MACD signal line values for the forecast periods.",
+          "items": {
+            "type": "number"
+          }
+        },
+        "histogram": {
+          "type": "array",
+          "description": "An array of MACD histogram values for the forecast periods.",
+          "items": {
+            "type": "number"
+          }
+        },
+        "bollingerUpper": {
+          "type": "string",
+          "description": "An array of upper Bollinger Band values for the forecast periods.",
+          "items": {
+            "type": "number"
+          }
+        },
+        "bollingerMiddle": {
+          "type": "string",
+          "description": "An array of middle Bollinger Band (SMA) values for the forecast periods.",
+          "items": {
+            "type": "number"
+          }
+        },
+        "bollingerLower": {
+          "type": "string",
+          "description": "An array of lower Bollinger Band values for the forecast periods.",
+          "items": {
+            "type": "number"
+          }
+        },
+        "bollingerBandwidth": {
+          "type": "number",
+          "description": "The calculated bandwidth of the Bollinger Bands."
+        },
+        "bollingerPosition": {
+          "type": "number",
+          "description": "The current price's position relative to the Bollinger Bands (e.g., normalized between 0 and 1)."
+        },
+        "sma10": {
+          "type": "number",
+          "description": "The 10-period Simple Moving Average at the time of forecast."
+        },
+        "sma20": {
+          "type": "number",
+          "description": "The 20-period Simple Moving Average at the time of forecast."
+        },
+        "sma50": {
+          "type": "number",
+          "description": "The 50-period Simple Moving Average at the time of forecast."
+        },
+        "ema10": {
+          "type": "number",
+          "description": "The 10-period Exponential Moving Average at the time of forecast."
+        },
+        "ema20": {
+          "type": "number",
+          "description": "The 20-period Exponential Moving Average at the time of forecast."
+        },
+        "overallTrend": {
+          "type": "string",
+          "description": "The overall trend detected in the forecast (e.g., 'upward', 'downward', 'sideways')."
+        },
+        "trendStrength": {
+          "type": "number",
+          "description": "A quantitative measure of the strength of the detected trend."
+        },
+        "slope": {
+          "type": "number",
+          "description": "The calculated slope of the trend line."
+        },
+        "changePercent": {
+          "type": "number",
+          "description": "The percentage change over the forecast period."
+        },
+        "volatilityForecast": {
+          "type": "number",
+          "description": "The forecasted volatility for the period."
+        },
+        "anomaliesDetected": {
+          "type": "boolean",
+          "description": "Indicates whether any anomalies were detected in the forecast data."
+        },
+        "anomalyCount": {
+          "type": "number",
+          "description": "The total number of anomalies detected."
+        },
+        "anomalyDetails": {
+          "type": "array",
+          "description": "A list of detected anomalies, each containing details like period, value, z-score, and type.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "forecastVsVolumeCorrelation": {
+          "type": "number",
+          "description": "The correlation coefficient between the forecast and volume data."
+        },
+        "forecastVsRsiCorrelation": {
+          "type": "number",
+          "description": "The correlation coefficient between the forecast and RSI values."
+        },
+        "forecastVsMacdCorrelation": {
+          "type": "number",
+          "description": "The correlation coefficient between the forecast and MACD values."
+        },
+        "withHistoricalDataCorrelation": {
+          "type": "number",
+          "description": "The correlation coefficient between the forecast and historical data."
+        },
+        "modelConfidence": {
+          "type": "number",
+          "description": "A confidence score for the predictive power of the model for this forecast."
+        },
+        "predictionReliability": {
+          "type": "string",
+          "description": "A qualitative rating of the prediction's reliability ('high', 'medium', 'low')."
+        },
+        "recommendation": {
+          "type": "string",
+          "description": "A recommendation based on the forecast and technical analysis (e.g., 'STRONG_BUY', 'HOLD')."
+        },
+        "riskLevel": {
+          "type": "string",
+          "description": "The assessed risk level associated with the forecast ('low', 'medium', 'high')."
+        },
+        "generatedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the forecast report was generated.",
+          "format": "date-time"
+        },
+        "executionTimeMs": {
+          "type": "number",
+          "description": "The time taken in milliseconds to generate this forecast and analysis."
+        },
+        "cacheHit": {
+          "type": "boolean",
+          "description": "Indicates whether the forecast result was retrieved from cache."
+        },
+        "prophetTrendComponents": {
+          "type": "array",
+          "description": "An array of trend components from Prophet model forecast. (Only for Prophet models)",
+          "items": {
+            "type": "number"
+          }
+        },
+        "prophetYearlySeasonalityComponents": {
+          "type": "array",
+          "description": "An array of yearly seasonality components from Prophet model forecast. (Only for Prophet models)",
+          "items": {
+            "type": "number"
+          }
+        },
+        "prophetWeeklySeasonalityComponents": {
+          "type": "array",
+          "description": "An array of weekly seasonality components from Prophet model forecast. (Only for Prophet models)",
+          "items": {
+            "type": "number"
+          }
+        },
+        "prophetMonthlySeasonalityComponents": {
+          "type": "array",
+          "description": "An array of monthly seasonality components from Prophet model forecast. (Only for Prophet models)",
+          "items": {
+            "type": "number"
+          }
+        },
+        "prophetHolidayEffectsComponents": {
+          "type": "array",
+          "description": "An array of holiday effects components from Prophet model forecast. (Only for Prophet models)",
+          "items": {
+            "type": "number"
+          }
+        },
+        "prophetTrendUncertainty": {
+          "type": "array",
+          "description": "An array representing the uncertainty in the trend component of the Prophet forecast. (Only for Prophet models)",
+          "items": {
+            "type": "number"
+          }
+        },
+        "prophetSeasonalUncertainty": {
+          "type": "array",
+          "description": "An array representing the uncertainty in the seasonal component of the Prophet forecast. (Only for Prophet models)",
+          "items": {
+            "type": "number"
+          }
+        },
+        "prophetObservationError": {
+          "type": "number",
+          "description": "The estimated observation error for the Prophet forecast. (Only for Prophet models)"
+        },
+        "prophetYearlySeasonalityCoefficients": {
+          "type": "string",
+          "description": "An object containing coefficients for yearly seasonality. (Only for Prophet models)"
+        },
+        "prophetYearlySeasonalityStrength": {
+          "type": "number",
+          "description": "The strength of the yearly seasonality detected by Prophet. (Only for Prophet models)"
+        },
+        "prophetWeeklySeasonalityCoefficients": {
+          "type": "string",
+          "description": "An object containing coefficients for weekly seasonality. (Only for Prophet models)"
+        },
+        "prophetWeeklySeasonalityStrength": {
+          "type": "number",
+          "description": "The strength of the weekly seasonality detected by Prophet. (Only for Prophet models)"
+        },
+        "prophetDetectedChangepoints": {
+          "type": "array",
+          "description": "A list of detected changepoints in the Prophet forecast, with magnitude and confidence. (Only for Prophet models)",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "modelId",
+        "modelType",
+        "forecastDate",
+        "periods",
+        "forecastValues",
+        "forecastColumnNames",
+        "timestampsDates",
+        "timestampsDatetimes",
+        "timestampsUnixTimestamps",
+        "timestampsInterval",
+        "timestampsTimezone",
+        "confidenceIntervalsLower95",
+        "confidenceIntervalsUpper95",
+        "actualLastData",
+        "mae",
+        "rmse",
+        "mape",
+        "forecastMean",
+        "forecastStd",
+        "forecastMin",
+        "forecastMax",
+        "forecastMedian",
+        "forecastPercentile25",
+        "forecastPercentile75",
+        "forecastVolatility",
+        "rsiValues",
+        "rsiOverbought",
+        "rsiOversold",
+        "rsiSignal",
+        "macdLine",
+        "signalLine",
+        "histogram",
+        "bollingerUpper",
+        "bollingerMiddle",
+        "bollingerLower",
+        "bollingerBandwidth",
+        "bollingerPosition",
+        "sma10",
+        "sma20",
+        "sma50",
+        "ema10",
+        "ema20",
+        "overallTrend",
+        "trendStrength",
+        "slope",
+        "changePercent",
+        "volatilityForecast",
+        "anomaliesDetected",
+        "anomalyCount",
+        "anomalyDetails",
+        "forecastVsVolumeCorrelation",
+        "forecastVsRsiCorrelation",
+        "forecastVsMacdCorrelation",
+        "withHistoricalDataCorrelation",
+        "modelConfidence",
+        "predictionReliability",
+        "recommendation",
+        "riskLevel",
+        "generatedAt",
+        "executionTimeMs",
+        "cacheHit"
+      ]
+    },
+    "ApiKey": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "ApiKey",
+      "type": "object",
+      "description": "Manages API keys for authentication, including their creation time, usage statistics, and status.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the API key entity. This is a partial, non-secret identifier."
+        },
+        "name": {
+          "type": "string",
+          "description": "A user-friendly name assigned to the API key for identification."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp indicating when the API key was generated.",
+          "format": "date-time"
+        },
+        "lastUsedAt": {
+          "type": "string",
+          "description": "Timestamp indicating the last time this API key was used for a request.",
+          "format": "date-time"
+        },
+        "requestsCount": {
+          "type": "number",
+          "description": "The cumulative number of requests made using this API key."
+        },
+        "status": {
+          "type": "string",
+          "description": "The current status of the API key ('active', 'revoked')."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "createdAt",
+        "requestsCount",
+        "status"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}/uploadedFiles/{fileId}",
+        "definition": {
+          "entityName": "UploadedFile",
+          "schema": {
+            "$ref": "#/backend/entities/UploadedFile"
+          },
+          "description": "Stores metadata for CSV files uploaded by a specific user. The 'userId' in the path establishes ownership, ensuring authorization independence for this collection. The 'id' field within the document should match the 'fileId' in the path.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who uploaded the file."
+            },
+            {
+              "name": "fileId",
+              "description": "The unique identifier for the uploaded file."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/lstmModels/{modelId}",
+        "definition": {
+          "entityName": "LstmModel",
+          "schema": {
+            "$ref": "#/backend/entities/LstmModel"
+          },
+          "description": "Stores LSTM model configurations, training parameters, and performance metrics for models trained by a specific user. The 'userId' in the path establishes ownership, ensuring authorization independence. The 'fileId' field within the document links to the associated UploadedFile, and the 'id' field should match the 'modelId' in the path.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who owns the model."
+            },
+            {
+              "name": "modelId",
+              "description": "The unique identifier for the LSTM model."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/prophetModels/{modelId}",
+        "definition": {
+          "entityName": "ProphetModel",
+          "schema": {
+            "$ref": "#/backend/entities/ProphetModel"
+          },
+          "description": "Stores Prophet model configurations, training parameters, and performance metrics for models trained by a specific user. The 'userId' in the path establishes ownership, ensuring authorization independence. The 'fileId' field within the document links to the associated UploadedFile, and the 'id' field should match the 'modelId' in the path.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who owns the model."
+            },
+            {
+              "name": "modelId",
+              "description": "The unique identifier for the Prophet model."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/forecasts/{forecastId}",
+        "definition": {
+          "entityName": "Forecast",
+          "schema": {
+            "$ref": "#/backend/entities/Forecast"
+          },
+          "description": "Stores detailed forecast results and analysis generated by models owned by a specific user. The 'userId' in the path establishes ownership, ensuring authorization independence. The 'modelId' field within the document links to the associated LstmModel or ProphetModel, and the 'id' field should match the 'forecastId' in the path.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who owns the forecast."
+            },
+            {
+              "name": "forecastId",
+              "description": "The unique identifier for the forecast."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/apiKeys/{apiKeyId}",
+        "definition": {
+          "entityName": "ApiKey",
+          "schema": {
+            "$ref": "#/backend/entities/ApiKey"
+          },
+          "description": "Manages API key metadata for a specific user, enabling secure API access. The 'userId' in the path establishes ownership, ensuring authorization independence. The 'id' field within the document should match the 'apiKeyId' in the path.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who owns the API key."
+            },
+            {
+              "name": "apiKeyId",
+              "description": "The unique identifier for the API key."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The recommended Firestore structure is strictly user-centric, with all user-specific data nested under a dedicated `/users/{userId}` path. This design adheres to all core design principles, especially Authorization Independence and Querying All with Predictable Security (QAPs).\n\n**Authorization Independence (CRITICAL):** All entities – `UploadedFile`, `LstmModel`, `ProphetModel`, `Forecast`, and `ApiKey` – are stored as subcollections directly under a specific user's document (e.g., `/users/{userId}/uploadedFiles/{fileId}`). This path-based authorization is the cornerstone of the security model. For any document in these subcollections, the `userId` segment of the path directly identifies the owner. Consequently, Firestore Security Rules can simply verify `request.auth.uid == userId` for all read/write operations. This eliminates the need for any `get()` calls to parent documents or external collections to determine ownership or permissions, making authorization checks atomic, highly performant, and robust against race conditions or complex debugging scenarios. While `fileId` and `modelId` fields are used for referential integrity between entities, they are not used for authorization directly, further enhancing independence.\n\n**Querying All with Predictable Security (QAPs):** This hierarchical structure inherently enforces QAPs. When a user queries for their data (e.g., `db.collection('users').doc(request.auth.uid).collection('uploadedFiles').get()`), the query scope is already limited to their specific `userId` path. The security rules will automatically filter and restrict access to only the documents belonging to the authenticated user. There is no possibility for a `list` operation to inadvertently expose another user's data because the data is physically segregated by the `userId` in the path. This fulfills the mandate that rules are not filters, as the structure itself prevents cross-user data leakage by design. Each collection (`uploadedFiles`, `lstmModels`, `prophetModels`, `forecasts`, `apiKeys`) maintains a homogeneous security posture, as all documents within a given user's subcollection belong to that single user."
+  }
+}

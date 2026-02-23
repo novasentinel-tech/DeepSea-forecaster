@@ -1,0 +1,139 @@
+/**
+ * @title Firebase Security Rules for Forecasting App
+ * @description
+ * This ruleset enforces a strict, user-centric security model where all user-generated data
+ * is isolated and owned by the user who created it. Access is granted based on the user's
+ * authenticated UID, which must match the user ID in the document path.
+ *
+ * @philosophy
+ * Core Philosophy: The security model is built on strict user ownership. A user can only access
+ * data that resides within their own dedicated data tree (`/users/{userId}/...`). This prevents
+ * any user from accessing, listing, or modifying another user's data.
+ *
+ * @structure
+ * Data Structure: All data is organized hierarchically under the `/users/{userId}` path.
+ * Each type of user-specific data (e.g., uploadedFiles, lstmModels, forecasts) is stored
+ * in a dedicated subcollection under the user's path. This structure makes ownership checks
+ * simple, fast, and highly secure.
+ *
+ * @decisions
+ * Key Security Decisions:
+ * 1. Default Deny: All operations are denied by default. Access is only granted by explicit `allow` rules.
+ * 2. User Data Segregation: There are no top-level collections with mixed-ownership data. All data is
+ *    private to a specific user, preventing accidental data exposure in list queries.
+ * 3. No User Listing: It is not possible to list documents in the top-level `/users` collection.
+ * 4. Authorization via Path: Ownership is determined exclusively from the `{userId}` wildcard in the
+ *    document path, which is fast and avoids costly `get()` calls to other documents.
+ * 5. Relational Integrity: On document creation, rules verify that the document's internal `id` field
+ *    matches the document ID in the path. On update, critical identifiers (`id`, `fileId`, `modelId`)
+ *    are enforced as immutable to maintain stable relationships.
+ * 6. Prototyping Flexibility: These rules strictly control *who* can access data but are flexible on
+ *    the *shape* of that data, allowing for rapid front-end development without constant rule changes.
+ *    Only fields critical for authorization and relational integrity are validated.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // -------------------------------------------------------------------------
+    // Helper Functions
+    // -------------------------------------------------------------------------
+
+    /**
+     * Checks if the user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * Checks if the authenticated user's UID matches the given userId from the path.
+     * This is the primary function for enforcing data ownership.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * A stricter version of isOwner for update and delete operations.
+     * It ensures the document already exists before allowing a modification.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    // -------------------------------------------------------------------------
+    // User Data Collections
+    // -------------------------------------------------------------------------
+
+    /**
+     * @description Rules for a user's uploaded file metadata.
+     * @path /users/{userId}/uploadedFiles/{fileId}
+     * @allow (get) An authenticated user reads their own uploadedFile document. auth.uid: "user_abc", path: /users/user_abc/uploadedFiles/file_123
+     * @deny  (get) A user tries to read another user's file. auth.uid: "user_xyz", path: /users/user_abc/uploadedFiles/file_123
+     * @principle Restricts access to a user's own data tree and validates relational integrity on create.
+     */
+    match /users/{userId}/uploadedFiles/{fileId} {
+      allow get, list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.id == fileId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Rules for a user's trained LSTM models.
+     * @path /users/{userId}/lstmModels/{modelId}
+     * @allow (create) An authenticated user creates a new lstmModel document in their own path. auth.uid: "user_abc", path: /users/user_abc/lstmModels/model_123
+     * @deny  (update) An authenticated user tries to change the `fileId` of an existing model.
+     * @principle Enforces document ownership for all operations and ensures critical relationship fields are immutable.
+     */
+    match /users/{userId}/lstmModels/{modelId} {
+      allow get, list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.id == modelId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id && request.resource.data.fileId == resource.data.fileId;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Rules for a user's trained Prophet models.
+     * @path /users/{userId}/prophetModels/{modelId}
+     * @allow (list) An authenticated user lists all prophetModel documents in their own collection. auth.uid: "user_abc", path: /users/user_abc/prophetModels
+     * @deny  (delete) A user tries to delete a model belonging to another user. auth.uid: "user_xyz", path: /users/user_abc/prophetModels/model_123
+     * @principle Enforces document ownership for all operations and ensures critical relationship fields are immutable.
+     */
+    match /users/{userId}/prophetModels/{modelId} {
+      allow get, list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.id == modelId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id && request.resource.data.fileId == resource.data.fileId;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Rules for a user's generated forecasts.
+     * @path /users/{userId}/forecasts/{forecastId}
+     * @allow (delete) An authenticated user deletes their own forecast document. auth.uid: "user_abc", path: /users/user_abc/forecasts/forecast_123
+     * @deny  (create) An authenticated user tries to create a forecast where the document's internal `id` does not match the `forecastId` in the path.
+     * @principle Enforces document ownership for all operations and ensures critical relationship fields are immutable.
+     */
+    match /users/{userId}/forecasts/{forecastId} {
+      allow get, list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.id == forecastId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id && request.resource.data.modelId == resource.data.modelId;
+      allow delete: if isExistingOwner(userId);
+    }
+
+    /**
+     * @description Rules for a user's API key metadata.
+     * @path /users/{userId}/apiKeys/{apiKeyId}
+     * @allow (update) An authenticated user updates their own apiKey document (e.g., to change its status). auth.uid: "user_abc", path: /users/user_abc/apiKeys/key_123
+     * @deny  (list) A user tries to list API keys belonging to another user. auth.uid: "user_xyz", path: /users/user_abc/apiKeys
+     * @principle Restricts access to a user's own data tree and protects immutable properties like creation timestamp.
+     */
+    match /users/{userId}/apiKeys/{apiKeyId} {
+      allow get, list: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.id == apiKeyId;
+      allow update: if isExistingOwner(userId) && request.resource.data.id == resource.data.id && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if isExistingOwner(userId);
+    }
+  }
+}
