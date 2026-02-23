@@ -51,10 +51,9 @@ export class TOTEMDeepseaClient {
     } catch (e: any) {
       const networkErrorMessage = `Erro de rede ao tentar acessar ${url}: ${e.message}.`;
       console.error(networkErrorMessage);
-      // A variável de ambiente do host real da API só é usada no lado do servidor pelo next.config.js
-      // Portanto, o erro para o usuário deve se referir a essa variável.
+      // O erro agora é mais genérico e útil
       throw new Error(
-        `Falha na conexão com a API. Verifique se o servidor está online e se a variável de ambiente API_HOST em seu .env está configurada corretamente.`
+        `Falha na conexão com a API. Verifique se o servidor da API Python está em execução e se as configurações no arquivo .env estão corretas.`
       );
     }
 
