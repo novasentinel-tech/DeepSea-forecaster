@@ -1,5 +1,4 @@
 import type { Express } from "express";
-import type { Server } from "http";
 import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
@@ -41,10 +40,7 @@ async function runForecastModel(inputData: any): Promise<any> {
   });
 }
 
-export async function registerRoutes(
-  httpServer: Server,
-  app: Express
-): Promise<Server> {
+export function registerRoutes(app: Express): void {
   app.get(api.datasets.list.path, async (req, res) => {
     const items = await storage.getDatasets();
     res.json(items);
@@ -132,6 +128,4 @@ export async function registerRoutes(
       res.status(500).json({ message: err instanceof Error ? err.message : 'Internal server error' });
     }
   });
-
-  return httpServer;
 }
