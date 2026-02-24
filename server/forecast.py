@@ -12,6 +12,7 @@ import time
 import joblib
 import os
 import uuid
+import traceback
 
 # Configure logging
 logging.basicConfig(
@@ -380,18 +381,18 @@ if __name__ == "__main__":
     try:
         main()
     except Exception as e:
-        import traceback
-        
-        logger.error(f"An unhandled exception occurred: {str(e)}")
+        # Captura o traceback completo
         tb = traceback.format_exc()
-        
-        # Log to stderr so it doesn't pollute stdout
+
+        # Log no console (opcional, mas útil)
         print(f"FATAL_ERROR: {str(e)}", file=sys.stderr)
         print(tb, file=sys.stderr)
 
-        # Return a consistent JSON error to stdout
+        # Retorna um JSON consistente com erro
         print(json.dumps({
             "error": str(e),
             "traceback": tb
         }))
         sys.exit(1)
+
+    

@@ -37,6 +37,15 @@ async function runForecastModel(inputData: any): Promise<any> {
       }
 
       if (code !== 0) {
+        // Try to parse stderrData or stdoutData for a JSON error from the script
+        try {
+          const errorResult = JSON.parse(stdoutData || stderrData);
+          if (errorResult.error) {
+            return reject(new Error(`Forecast script error: ${errorResult.error}\nTraceback: ${errorResult.traceback}`));
+          }
+        } catch (e) {
+          // Fallback if parsing fails
+        }
         reject(new Error(`Python script failed with code ${code}. STDERR: ${stderrData}`));
       } else {
         try {
@@ -163,3 +172,5 @@ export function registerRoutes(): express.Router {
 
   return router;
 }
+
+    
