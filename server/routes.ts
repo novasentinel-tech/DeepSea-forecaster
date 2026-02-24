@@ -5,6 +5,7 @@ import { z } from "zod";
 import { spawn } from "child_process";
 import path from "path";
 import crypto from "crypto";
+import express from "express";
 
 // Helper to run python script
 async function runForecastModel(inputData: any): Promise<any> {
@@ -94,7 +95,6 @@ export function registerRoutes(app: Express): void {
         return res.status(404).json({ message: 'Dataset not found' });
       }
 
-      // Check if dataset.data is an array
       if (!Array.isArray(dataset.data)) {
         return res.status(400).json({ message: 'Dataset data is not in the expected array format.' });
       }
@@ -116,14 +116,16 @@ export function registerRoutes(app: Express): void {
         datasetId: input.datasetId,
         algorithm: input.algorithm,
         targetVariable: input.targetVariable,
-        features: result.featuresUsed, // Use the full feature list from the script
+        features: result.featuresUsed,
         horizon: input.horizon,
         hyperparameters,
         modelPath: result.modelPath,
         trainingDuration: result.trainingDuration,
         forecastData: result.forecastData,
         metrics: result.metrics,
-        datasetVersion: 1, // Placeholder for now
+        featureImportance: result.featureImportance,
+        trainingConfig: result.trainingConfig,
+        datasetVersion: 1, // Placeholder
       });
 
       res.status(201).json(model);
@@ -132,7 +134,8 @@ export function registerRoutes(app: Express): void {
         return res.status(400).json({ message: err.errors[0].message, field: err.errors[0].path.join('.') });
       }
       console.error(err);
-      res.status(500).json({ message: err instanceof Error ? err.message : 'Internal server error' });
+      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred during model training.';
+      res.status(500).json({ message: errorMessage });
     }
   });
 

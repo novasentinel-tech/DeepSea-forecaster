@@ -3,9 +3,10 @@ import { useModel } from "@/hooks/use-forecasts";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ForecastChart } from "@/components/charts/forecast-chart";
-import { BrainCircuit, Target, Layers, ArrowLeft, BarChart3, Clock, TestTube2, FileJson } from "lucide-react";
+import { BrainCircuit, Target, Layers, ArrowLeft, BarChart3, Clock, TestTube2, FileJson, TrendingUp } from "lucide-react";
 import { Link } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 
 export default function ForecastDetail() {
   const [, params] = useRoute("/forecasts/:id");
@@ -39,8 +40,13 @@ export default function ForecastDetail() {
 
   const metrics = model.metrics as Record<string, number>;
   const features = model.features as string[];
-  const hyperparameters = model.hyperparameters as Record<string, any>;
+  const featureImportance = model.featureImportance as Record<string, number>;
+  const trainingConfig = model.trainingConfig as Record<string, any>;
+  const hyperparameters = trainingConfig.hyperparameters as Record<string, any>;
 
+  const sortedFeatureImportance = featureImportance 
+    ? Object.entries(featureImportance).sort(([,a],[,b]) => b-a)
+    : [];
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -80,7 +86,7 @@ export default function ForecastDetail() {
           <CardContent className="space-y-4 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground flex items-center"><BrainCircuit className="w-4 h-4 mr-2"/>Algoritmo</span>
-              <span className="font-mono text-primary bg-primary/10 px-2 py-1 rounded-md">{model.algorithm}</span>
+              <span className="font-mono text-primary bg-primary/10 px-2 py-1 rounded-md">{trainingConfig.model}</span>
             </div>
              <div className="flex justify-between">
               <span className="text-muted-foreground flex items-center"><FileJson className="w-4 h-4 mr-2"/>ID do Dataset</span>
@@ -104,22 +110,33 @@ export default function ForecastDetail() {
         </Card>
         
         <Card className="glass-card lg:col-span-2">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center"><Layers className="w-4 h-4 mr-2 text-primary" /> Características Utilizadas ({features.length})</CardTitle>
-          </CardHeader>
-          <CardContent>
-             <div className="flex flex-wrap gap-2 mt-1">
-                {features.map((f: string) => (
-                  <span key={f} className="text-xs bg-secondary/50 px-2 py-1 rounded border border-border/50 text-muted-foreground">{f}</span>
-                ))}
-              </div>
-          </CardContent>
+           <CardHeader className="pb-3">
+             <CardTitle className="text-lg flex items-center"><TrendingUp className="w-4 h-4 mr-2 text-primary" /> Importância das Features</CardTitle>
+           </CardHeader>
+           <CardContent>
+              {sortedFeatureImportance.length > 0 ? (
+                <div className="space-y-2">
+                  {sortedFeatureImportance.slice(0, 7).map(([feature, importance]) => (
+                    <div key={feature} className="flex items-center text-sm">
+                      <span className="w-1/2 truncate text-muted-foreground">{feature}</span>
+                      <div className="w-1/2">
+                        <div className="w-full bg-secondary/50 rounded-full h-2.5">
+                          <div className="bg-primary h-2.5 rounded-full" style={{ width: `${(importance * 100).toFixed(2)}%` }}></div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">A importância das features não está disponível para este tipo de modelo.</p>
+              )}
+           </CardContent>
         </Card>
 
         <Card className="glass-card md:col-span-3 lg:col-span-4 bg-gradient-to-br from-card to-secondary/10">
           <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center"><BarChart3 className="w-4 h-4 mr-2 text-accent" /> Métricas de Desempenho</CardTitle>
-            <CardDescription>Avaliado no conjunto de teste histórico</CardDescription>
+            <CardTitle className="text-lg flex items-center"><BarChart3 className="w-4 h-4 mr-2 text-accent" /> Métricas de Desempenho (Média de 5 Folds)</CardTitle>
+            <CardDescription>Avaliado usando validação cruzada de séries temporais.</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

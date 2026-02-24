@@ -16,6 +16,8 @@ def create_features(df, target_variable):
     """
     Creates time series features from a datetime index.
     """
+    # Make a copy to avoid modifying the original DataFrame
+    df = df.copy()
     df['date'] = pd.to_datetime(df['date'])
     df['dayofweek'] = df['date'].dt.dayofweek
     df['month'] = df['date'].dt.month
@@ -32,8 +34,6 @@ def create_features(df, target_variable):
         df[f'{target_variable}_rolling_mean_{window}'] = df[target_variable].rolling(window=window).mean()
         df[f'{target_variable}_rolling_std_{window}'] = df[target_variable].rolling(window=window).std()
         
-    # Use backfill to handle NaNs created by shift and rolling
-    df = df.bfill()
     return df
 
 def main():
@@ -71,7 +71,11 @@ def main():
         
     df["date"] = pd.to_datetime(df["date"])
     df = df.sort_values("date").reset_index(drop=True)
-    df = df.ffill().bfill() # Initial fill for any existing gaps
+    
+    # --- Data Cleaning (No Data Leakage) ---
+    # Use forward fill and then drop any remaining NaNs at the beginning
+    df = df.ffill().dropna()
+    df = df.reset_index(drop=True)
 
     # --- Feature Engineering ---
     engineered_df = create_features(df.copy(), target)
@@ -80,22 +84,55 @@ def main():
     date_feature_names = ['dayofweek', 'month', 'year', 'dayofyear', 'weekofyear']
     
     final_features = sorted(list(set(user_features + engineered_feature_names + date_feature_names)))
-    
-    # Ensure all final features exist in the dataframe and are not the target
     final_features = [f for f in final_features if f in engineered_df.columns and f != target]
 
+    # Drop NaNs created by feature engineering
+    engineered_df = engineered_df.dropna().reset_index(drop=True)
+    
     X = engineered_df[final_features]
     y = engineered_df[target]
 
     # --- Time Series Cross-Validation ---
-    tscv = TimeSeriesSplit(n_splits=5)
-    train_index, test_index = list(tscv.split(X))[-1]
+    n_splits = 5
+    tscv = TimeSeriesSplit(n_splits=n_splits)
     
-    X_train, X_test = X.iloc[train_index], X.iloc[test_index]
-    y_train, y_test = y.iloc[train_index], y.iloc[test_index]
+    mae_scores = []
+    rmse_scores = []
+    residuals = np.array([])
+    
+    start_time = time.time()
+    for train_index, test_index in tscv.split(X):
+        X_train, X_test = X.iloc[train_index], X.iloc[test_index]
+        y_train, y_test = y.iloc[train_index], y.iloc[test_index]
 
+        if model_name == "random_forest":
+            model_cv = RandomForestRegressor(
+                n_estimators=hyperparameters.get('n_estimators', 100),
+                max_depth=hyperparameters.get('max_depth', None),
+                min_samples_split=hyperparameters.get('min_samples_split', 2),
+                random_state=42,
+                n_jobs=-1
+            )
+        else:
+            model_cv = LinearRegression()
+
+        model_cv.fit(X_train, y_train)
+        y_pred_test = model_cv.predict(X_test)
+        
+        mae_scores.append(mean_absolute_error(y_test, y_pred_test))
+        rmse_scores.append(np.sqrt(mean_squared_error(y_test, y_pred_test)))
+        residuals = np.concatenate([residuals, y_test - y_pred_test])
+    
+    training_duration = time.time() - start_time
+
+    # Calculate average metrics and residual std
+    avg_mae = np.mean(mae_scores)
+    avg_rmse = np.mean(rmse_scores)
+    residual_std = np.std(residuals)
+
+    # --- Retrain on Full Data for Future Predictions and Feature Importance ---
     if model_name == "random_forest":
-        model = RandomForestRegressor(
+        full_model = RandomForestRegressor(
             n_estimators=hyperparameters.get('n_estimators', 100),
             max_depth=hyperparameters.get('max_depth', None),
             min_samples_split=hyperparameters.get('min_samples_split', 2),
@@ -103,58 +140,62 @@ def main():
             n_jobs=-1
         )
     else:
-        model = LinearRegression()
+        full_model = LinearRegression()
+        
+    full_model.fit(X, y)
+    y_pred_full_insample = full_model.predict(X)
 
-    start_time = time.time()
-    model.fit(X_train, y_train)
-    training_duration = time.time() - start_time
+    feature_importance = {}
+    if model_name == "random_forest":
+        importances = full_model.feature_importances_
+        feature_importance = dict(sorted(zip(final_features, importances), key=lambda item: item[1], reverse=True))
 
-    # --- Evaluate on Test Set ---
-    y_pred_test = model.predict(X_test)
-    mae = mean_absolute_error(y_test, y_pred_test)
-    rmse = np.sqrt(mean_squared_error(y_test, y_pred_test))
-    
-    # --- Retrain on Full Data for Future Predictions ---
-    full_model = model.fit(X, y)
-    
     model_id = str(uuid.uuid4())
     model_path = os.path.join(models_dir, f"{model_id}.pkl")
     joblib.dump(full_model, model_path)
 
-    # --- Generate Future Forecast ---
-    margin_of_error = 1.96 * rmse
-    last_date = engineered_df["date"].iloc[-1]
-    freq = engineered_df["date"].diff().median()
+    # --- Generate Future Forecast (Iteratively) ---
+    margin_of_error = 1.96 * residual_std
     
+    history = engineered_df.copy()
+    y_pred_future = []
+    
+    last_date = history["date"].iloc[-1]
+    freq = history["date"].diff().median()
     future_dates = pd.date_range(start=last_date + freq, periods=horizon, freq=freq)
-    future_df = pd.DataFrame({'date': future_dates})
 
-    # For future predictions, we need to create features for the future dates.
-    # This involves carrying over last known values and then iteratively predicting.
-    # For a simpler but effective approach, we'll create features based on the available data.
-    
-    full_history_df = pd.concat([engineered_df, future_df], ignore_index=True)
-    full_history_df = create_features(full_history_df, target) # This will create date features and NaNs for lags/rolling
-    
-    X_future = full_history_df[final_features].iloc[-horizon:]
-    
-    y_pred_future = full_model.predict(X_future)
-    
-    y_pred_full_insample = full_model.predict(X)
+    for date in future_dates:
+        # Create features for the single next step
+        next_step_df = history.iloc[[-1]].copy()
+        next_step_df['date'] = date
+        
+        # Recalculate date-based features
+        next_step_df['dayofweek'] = next_step_df['date'].dt.dayofweek
+        next_step_df['month'] = next_step_df['date'].dt.month
+        next_step_df['year'] = next_step_df['date'].dt.year
+        next_step_df['dayofyear'] = next_step_df['date'].dt.dayofyear
+        next_step_df['weekofyear'] = next_step_df['date'].dt.isocalendar().week.astype(int)
+
+        X_next = next_step_df[final_features]
+        prediction = full_model.predict(X_next)[0]
+        y_pred_future.append(prediction)
+        
+        # Append the prediction to history to be used for next step's features
+        new_row = next_step_df.copy()
+        new_row[target] = prediction
+        history = pd.concat([history, new_row], ignore_index=True)
+        # Re-create lag/rolling features based on the new "history"
+        history = create_features(history, target)
 
     # --- Construct Chart Data ---
     forecast_data = []
-    history_len = min(120, len(df))
-    start_idx = len(df) - history_len
     
-    for i in range(start_idx, len(df)):
-        is_test_sample = i in test_index
+    for i in range(len(engineered_df)):
         forecast_data.append({
-            "date": df["date"].iloc[i].strftime("%Y-%m-%d"),
-            "actual": float(df[target].iloc[i]),
+            "date": engineered_df["date"].iloc[i].strftime("%Y-%m-%d"),
+            "actual": float(engineered_df[target].iloc[i]),
             "predicted": float(y_pred_full_insample[i]),
-            # Only show confidence bounds for test set and future predictions
-            "bounds": [float(y_pred_full_insample[i] - margin_of_error), float(y_pred_full_insample[i] + margin_of_error)] if is_test_sample else None
+            "bounds": None # No bounds for historical fit for clarity
         })
         
     for i in range(horizon):
@@ -167,13 +208,20 @@ def main():
 
     result = {
         "metrics": {
-            "mae": float(mae),
-            "rmse": float(rmse)
+            "mae": float(avg_mae),
+            "rmse": float(avg_rmse)
         },
         "featuresUsed": final_features,
         "forecastData": forecast_data,
         "modelPath": model_path,
         "trainingDuration": training_duration,
+        "featureImportance": feature_importance,
+        "trainingConfig": {
+            "model": model_name,
+            "hyperparameters": hyperparameters,
+            "splits": n_splits,
+            "featureEngineering": True
+        }
     }
 
     print(json.dumps(result, allow_nan=False))

@@ -14,7 +14,7 @@ export const datasets = pgTable("datasets", {
 export const models = pgTable("models", {
   id: serial("id").primaryKey(),
   datasetId: integer("dataset_id").notNull(),
-  datasetVersion: integer("dataset_version").default(1), // To be implemented based on hash changes
+  datasetVersion: integer("dataset_version").default(1),
   algorithm: text("algorithm").notNull(),
   targetVariable: text("target_variable").notNull(),
   features: json("features").notNull(), // Array of feature names
@@ -24,6 +24,8 @@ export const models = pgTable("models", {
   horizon: integer("horizon").notNull(),
   forecastData: json("forecast_data").notNull(), // Stores the prediction made at training time
   metrics: json("metrics").notNull(), // MAE, RMSE, etc.
+  featureImportance: json("feature_importance"), // For tree-based models
+  trainingConfig: json("training_config"), // Full config for reproducibility
   status: text("status").default('completed'), // 'training', 'completed', 'failed'
   createdAt: timestamp("created_at").defaultNow(),
 });
