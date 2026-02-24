@@ -41,18 +41,25 @@ export function useGenerateForecast() {
         credentials: "include",
       });
       if (!res.ok) {
-        // Try to parse the error message from the server for better feedback
+        let errorMessage = `Failed to generate forecast. Status: ${res.status}`;
         try {
+          // Try to parse as JSON first
           const errorBody = await res.json();
           if (errorBody && errorBody.message) {
-            throw new Error(errorBody.message);
+            errorMessage = errorBody.message;
           }
         } catch (e) {
-          // If parsing fails or no message, fall back to a generic error
-          throw new Error(`Failed to generate forecast. Status: ${res.status}`);
+          // If JSON parsing fails, try to get the raw text body
+          try {
+            const textBody = await res.text();
+            if (textBody) {
+              errorMessage = textBody;
+            }
+          } catch (textErr) {
+            // Ignore error reading text body, use original status message
+          }
         }
-        // This line is unlikely to be reached but is a good fallback.
-        throw new Error("Failed to generate forecast");
+        throw new Error(errorMessage);
       }
       return api.forecasts.generate.responses[201].parse(await res.json());
     },

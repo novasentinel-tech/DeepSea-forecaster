@@ -39,15 +39,23 @@ export function useCreateDataset() {
         credentials: "include",
       });
       if (!res.ok) {
+        let errorMessage = `Failed to create dataset. Status: ${res.status}`;
         try {
           const errorBody = await res.json();
           if (errorBody && errorBody.message) {
-            throw new Error(errorBody.message);
+            errorMessage = errorBody.message;
           }
         } catch (e) {
-          throw new Error(`Failed to create dataset. Status: ${res.status}`);
+          try {
+            const textBody = await res.text();
+            if (textBody) {
+              errorMessage = textBody;
+            }
+          } catch (textErr) {
+            // Do nothing, use the original status message
+          }
         }
-        throw new Error("Failed to create dataset");
+        throw new Error(errorMessage);
       }
       return api.datasets.create.responses[201].parse(await res.json());
     },
