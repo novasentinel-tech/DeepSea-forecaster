@@ -25,7 +25,7 @@ async function runForecastModel(inputData: any): Promise<any> {
     
     pythonProcess.on('close', (code) => {
       if (code !== 0) {
-        reject(new Error(`Python script failed: ${stderrData}`));
+        reject(new Error(`Python script failed with code ${code}: ${stderrData}`));
       } else {
         try {
           resolve(JSON.parse(stdoutData));
@@ -41,12 +41,14 @@ async function runForecastModel(inputData: any): Promise<any> {
 }
 
 export function registerRoutes(app: Express): void {
-  app.get(api.datasets.list.path, async (req, res) => {
+  const router = express.Router();
+
+  router.get(api.datasets.list.path.replace('/api', ''), async (req, res) => {
     const items = await storage.getDatasets();
     res.json(items);
   });
 
-  app.get(api.datasets.get.path, async (req, res) => {
+  router.get(api.datasets.get.path.replace('/api', ''), async (req, res) => {
     const item = await storage.getDataset(Number(req.params.id));
     if (!item) {
       return res.status(404).json({ message: 'Dataset not found' });
@@ -54,7 +56,7 @@ export function registerRoutes(app: Express): void {
     res.json(item);
   });
 
-  app.post(api.datasets.create.path, async (req, res) => {
+  router.post(api.datasets.create.path.replace('/api', ''), async (req, res) => {
     try {
       const input = api.datasets.create.input.parse(req.body);
       const dataString = JSON.stringify(input.data);
@@ -70,12 +72,12 @@ export function registerRoutes(app: Express): void {
     }
   });
 
-  app.get(api.models.list.path, async (req, res) => {
+  router.get(api.models.list.path.replace('/api', ''), async (req, res) => {
     const items = await storage.getModels();
     res.json(items);
   });
 
-  app.get(api.models.get.path, async (req, res) => {
+  router.get(api.models.get.path.replace('/api', ''), async (req, res) => {
     const item = await storage.getModel(Number(req.params.id));
     if (!item) {
       return res.status(404).json({ message: 'Model not found' });
@@ -83,7 +85,7 @@ export function registerRoutes(app: Express): void {
     res.json(item);
   });
 
-  app.post(api.models.train.path, async (req, res) => {
+  router.post(api.models.train.path.replace('/api', ''), async (req, res) => {
     try {
       const input = api.models.train.input.parse(req.body);
       
@@ -92,9 +94,13 @@ export function registerRoutes(app: Express): void {
         return res.status(404).json({ message: 'Dataset not found' });
       }
 
-      // Prepare hyperparameters based on model
+      // Check if dataset.data is an array
+      if (!Array.isArray(dataset.data)) {
+        return res.status(400).json({ message: 'Dataset data is not in the expected array format.' });
+      }
+
       const hyperparameters = input.algorithm === 'random_forest' 
-        ? { n_estimators: 100 } // Example, can be expanded
+        ? { n_estimators: 100 }
         : {};
 
       const result = await runForecastModel({
@@ -110,13 +116,14 @@ export function registerRoutes(app: Express): void {
         datasetId: input.datasetId,
         algorithm: input.algorithm,
         targetVariable: input.targetVariable,
-        features: input.features,
+        features: result.featuresUsed, // Use the full feature list from the script
         horizon: input.horizon,
         hyperparameters,
         modelPath: result.modelPath,
         trainingDuration: result.trainingDuration,
         forecastData: result.forecastData,
-        metrics: result.metrics
+        metrics: result.metrics,
+        datasetVersion: 1, // Placeholder for now
       });
 
       res.status(201).json(model);
@@ -128,4 +135,6 @@ export function registerRoutes(app: Express): void {
       res.status(500).json({ message: err instanceof Error ? err.message : 'Internal server error' });
     }
   });
+
+  app.use('/api', router);
 }
