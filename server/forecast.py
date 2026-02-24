@@ -187,7 +187,6 @@ def infer_frequency(dates):
     return diffs.median()
 
 def main():
-  try:
     # Ensure models directory exists
     models_dir = 'models'
     if not os.path.exists(models_dir):
@@ -409,13 +408,27 @@ def main():
 
     print(json.dumps(result, allow_nan=False))
     logger.info("Forecast generation completed successfully.")
-  except Exception as e:
-    logger.exception("An unhandled error occurred during forecast generation")
-    print(json.dumps({"error": f"An unhandled error occurred: {str(e)}"}))
-    sys.exit(1)
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception as e:
+        import traceback
+        import sys
+        import json
+
+        # Captura o traceback completo
+        tb = traceback.format_exc()
+
+        # Log no console (opcional, mas útil)
+        print(tb, file=sys.stderr)
+
+        # Retorna um JSON consistente com erro
+        print(json.dumps({
+            "error": str(e),
+            "traceback": tb
+        }))
+        sys.exit(1)
 
     
