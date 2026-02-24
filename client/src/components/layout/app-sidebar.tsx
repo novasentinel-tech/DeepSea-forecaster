@@ -35,8 +35,8 @@ export function AppSidebar() {
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/20 text-primary ring-1 ring-primary/30">
           <Zap className="h-5 w-5" />
         </div>
-        <span className="font-bold text-lg tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-white/70">
-          Nexus<span className="text-primary font-black">AI</span>
+        <span className="font-bold text-lg tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">
+          Jota<span className="text-primary font-black">IA</span>
         </span>
       </SidebarHeader>
       

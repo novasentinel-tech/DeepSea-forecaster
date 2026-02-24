@@ -6,11 +6,51 @@
 
 @layer base {
   :root {
-    /* Forcing Dark Mode Professional Aesthetic */
     --font-sans: 'Plus Jakarta Sans', sans-serif;
     --font-mono: 'JetBrains Mono', monospace;
 
-    /* Deep, rich slate backgrounds */
+    --background: 0 0% 100%;
+    --foreground: 222.2 47.4% 11.2%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 47.4% 11.2%;
+ 
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 47.4% 11.2%;
+ 
+    --primary: 260 100% 60%;
+    --primary-foreground: 210 40% 98%;
+ 
+    --secondary: 0 0% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+ 
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+ 
+    --accent: 330 95% 55%;
+    --accent-foreground: 210 40% 98%;
+ 
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+ 
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+    --ring: 260 100% 60%;
+ 
+    --radius: 0.75rem;
+
+    /* Sidebar specifics for light theme */
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 222.2 47.4% 11.2%;
+    --sidebar-primary: 260 100% 60%;
+    --sidebar-primary-foreground: 210 40% 98%;
+    --sidebar-accent: 0 0% 94%;
+    --sidebar-accent-foreground: 222.2 47.4% 11.2%;
+    --sidebar-border: 0 0% 90%;
+    --sidebar-ring: 260 100% 60%;
+  }
+ 
+  .dark {
     --background: 224 35% 8%;
     --foreground: 210 40% 98%;
 
@@ -20,7 +60,6 @@
     --popover: 222 30% 11%;
     --popover-foreground: 210 40% 98%;
 
-    /* New Vibrant Violet/Magenta Theme */
     --primary: 260 100% 70%;
     --primary-foreground: 210 40% 98%;
 
@@ -30,7 +69,6 @@
     --muted: 217 24% 16%;
     --muted-foreground: 215 20% 65%;
 
-    /* New Vibrant accent */
     --accent: 330 100% 65%;
     --accent-foreground: 210 40% 98%;
 
@@ -41,9 +79,7 @@
     --input: 217 24% 20%;
     --ring: 260 100% 70%;
 
-    --radius: 0.75rem;
-
-    /* Sidebar specifics */
+    /* Sidebar specifics for dark theme */
     --sidebar-background: 224 35% 8%;
     --sidebar-foreground: 210 40% 98%;
     --sidebar-primary: 260 100% 70%;
