@@ -12,6 +12,17 @@ import { format } from "date-fns";
 import { Database, Plus, FileJson, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
+const realisticDataExample = `[
+  {"date": "2024-01-01", "energy_demand": 220, "temperature": 15, "humidity": 60, "day_of_week": 1, "is_weekend": false, "is_holiday": true, "prev_day_demand": 215},
+  {"date": "2024-01-02", "energy_demand": 250, "temperature": 16, "humidity": 62, "day_of_week": 2, "is_weekend": false, "is_holiday": false, "prev_day_demand": 220},
+  {"date": "2024-01-03", "energy_demand": 265, "temperature": 17, "humidity": 65, "day_of_week": 3, "is_weekend": false, "is_holiday": false, "prev_day_demand": 250},
+  {"date": "2024-01-04", "energy_demand": 270, "temperature": 18, "humidity": 68, "day_of_week": 4, "is_weekend": false, "is_holiday": false, "prev_day_demand": 265},
+  {"date": "2024-01-05", "energy_demand": 280, "temperature": 19, "humidity": 70, "day_of_week": 5, "is_weekend": false, "is_holiday": false, "prev_day_demand": 270},
+  {"date": "2024-01-06", "energy_demand": 240, "temperature": 20, "humidity": 72, "day_of_week": 6, "is_weekend": true, "is_holiday": false, "prev_day_demand": 280},
+  {"date": "2024-01-07", "energy_demand": 230, "temperature": 21, "humidity": 75, "day_of_week": 0, "is_weekend": true, "is_holiday": false, "prev_day_demand": 240},
+  {"date": "2024-01-08", "energy_demand": 290, "temperature": 22, "humidity": 78, "day_of_week": 1, "is_weekend": false, "is_holiday": false, "prev_day_demand": 230}
+]`;
+
 export default function Datasets() {
   const { data: datasets, isLoading } = useDatasets();
   const createDataset = useCreateDataset();
@@ -21,7 +32,7 @@ export default function Datasets() {
   const [formData, setFormData] = useState({
     name: "",
     type: "energy",
-    dataJson: "[\n  {\"date\": \"2024-01-01\", \"load\": 450, \"temp\": 22},\n  {\"date\": \"2024-01-02\", \"load\": 480, \"temp\": 24}\n]"
+    dataJson: realisticDataExample
   });
 
   const handleCreate = async (e: React.FormEvent) => {

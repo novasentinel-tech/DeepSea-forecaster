@@ -3,10 +3,9 @@ import { useModel } from "@/hooks/use-forecasts";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ForecastChart } from "@/components/charts/forecast-chart";
-import { BrainCircuit, Target, Layers, ArrowLeft, BarChart3, Clock, TestTube2, FileJson, TrendingUp } from "lucide-react";
+import { BrainCircuit, Target, ArrowLeft, BarChart3, Clock, TestTube2, FileJson, TrendingUp } from "lucide-react";
 import { Link } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
 
 export default function ForecastDetail() {
   const [, params] = useRoute("/forecasts/:id");
@@ -39,7 +38,6 @@ export default function ForecastDetail() {
   }
 
   const metrics = model.metrics as Record<string, number>;
-  const features = model.features as string[];
   const featureImportance = model.featureImportance as Record<string, number>;
   const trainingConfig = model.trainingConfig as Record<string, any>;
   const hyperparameters = trainingConfig.hyperparameters as Record<string, any>;
@@ -86,7 +84,7 @@ export default function ForecastDetail() {
           <CardContent className="space-y-4 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground flex items-center"><BrainCircuit className="w-4 h-4 mr-2"/>Algoritmo</span>
-              <span className="font-mono text-primary bg-primary/10 px-2 py-1 rounded-md">{trainingConfig.model}</span>
+              <span className="font-mono text-primary bg-primary/10 px-2 py-1 rounded-md">{trainingConfig.modelUsed}</span>
             </div>
              <div className="flex justify-between">
               <span className="text-muted-foreground flex items-center"><FileJson className="w-4 h-4 mr-2"/>ID do Dataset</span>
