@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useLocation } from "wouter";
 import { useDatasets } from "@/hooks/use-datasets";
-import { useGenerateForecast } from "@/hooks/use-forecasts";
+import { useTrainModel } from "@/hooks/use-forecasts";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -14,21 +14,19 @@ import { useToast } from "@/hooks/use-toast";
 export default function NewForecast() {
   const [, setLocation] = useLocation();
   const { data: datasets, isLoading: loadingDatasets } = useDatasets();
-  const generateForecast = useGenerateForecast();
+  const trainModel = useTrainModel();
   const { toast } = useToast();
 
   const [datasetId, setDatasetId] = useState<string>("");
-  const [model, setModel] = useState<"linear_regression" | "random_forest">("random_forest");
+  const [algorithm, setAlgorithm] = useState<"linear_regression" | "random_forest">("random_forest");
   const [target, setTarget] = useState<string>("");
   const [features, setFeatures] = useState<string[]>([]);
   const [horizon, setHorizon] = useState<string>("30");
 
-  // Derive available columns from selected dataset
   const availableColumns = useMemo(() => {
     if (!datasetId || !datasets) return [];
     const ds = datasets.find(d => d.id === parseInt(datasetId));
     if (!ds || !ds.data || !Array.isArray(ds.data) || ds.data.length === 0) return [];
-    // exclude 'date' or similar index columns from prediction targets usually, but keep it simple here
     return Object.keys(ds.data[0]).filter(k => k.toLowerCase() !== 'date' && k.toLowerCase() !== 'timestamp');
   }, [datasetId, datasets]);
 
@@ -46,33 +44,32 @@ export default function NewForecast() {
     }
 
     try {
-      const result = await generateForecast.mutateAsync({
+      const result = await trainModel.mutateAsync({
         datasetId: parseInt(datasetId),
-        modelUsed: model,
+        algorithm: algorithm,
         targetVariable: target,
         features: features,
         horizon: parseInt(horizon)
       });
       
-      toast({ title: "Forecast Complete", description: "Model trained and predictions generated." });
+      toast({ title: "Treinamento Concluído", description: `Modelo ${result.id} treinado com sucesso.` });
       setLocation(`/forecasts/${result.id}`);
     } catch (err: any) {
-      toast({ title: "Generation failed", description: err.message, variant: "destructive" });
+      toast({ title: "Falha no Treinamento", description: err.message, variant: "destructive" });
     }
   };
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Configurar Nova Previsão</h1>
-        <p className="text-muted-foreground mt-1">Defina os parâmetros para o motor de séries temporais multivariadas.</p>
+        <h1 className="text-3xl font-bold tracking-tight">Iniciar Novo Experimento</h1>
+        <p className="text-muted-foreground mt-1">Configure os parâmetros para treinar um novo modelo de previsão.</p>
       </div>
 
       <form onSubmit={handleSubmit}>
         <Card className="glass-card border-t-4 border-t-primary">
           <CardContent className="p-6 md:p-8 space-y-8">
             
-            {/* Step 1: Data Source */}
             <div className="space-y-4">
               <div className="flex items-center gap-2 pb-2 border-b border-border/50">
                 <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold">1</div>
@@ -96,7 +93,6 @@ export default function NewForecast() {
               </div>
             </div>
 
-            {/* Step 2: Variables */}
             <div className={`space-y-4 transition-opacity duration-300 ${!datasetId ? 'opacity-40 pointer-events-none' : ''}`}>
               <div className="flex items-center gap-2 pb-2 border-b border-border/50">
                 <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold">2</div>
@@ -149,17 +145,16 @@ export default function NewForecast() {
               </div>
             </div>
 
-            {/* Step 3: Model config */}
             <div className={`space-y-4 transition-opacity duration-300 ${!target ? 'opacity-40 pointer-events-none' : ''}`}>
               <div className="flex items-center gap-2 pb-2 border-b border-border/50">
                 <div className="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center text-xs font-bold">3</div>
-                <h3 className="text-lg font-medium">Motor do Modelo</h3>
+                <h3 className="text-lg font-medium">Configuração do Modelo</h3>
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-3">
                   <Label>Algoritmo</Label>
-                  <Select value={model} onValueChange={(v: any) => setModel(v)}>
+                  <Select value={algorithm} onValueChange={(v: any) => setAlgorithm(v)}>
                     <SelectTrigger className="bg-background/50">
                       <SelectValue />
                     </SelectTrigger>
@@ -189,21 +184,21 @@ export default function NewForecast() {
           <CardFooter className="bg-secondary/20 p-6 flex justify-between items-center border-t border-border/50">
             <p className="text-sm text-muted-foreground flex items-center">
               <Sparkles className="w-4 h-4 mr-2 text-accent" />
-              A geração pode levar alguns instantes dependendo do tamanho dos dados.
+              O treinamento pode levar alguns instantes.
             </p>
             <Button 
               type="submit" 
               size="lg" 
-              disabled={generateForecast.isPending || !datasetId || !target || features.length === 0}
+              disabled={trainModel.isPending || !datasetId || !target || features.length === 0}
               className="hover-elevate shadow-xl shadow-primary/20 bg-gradient-to-r from-primary to-primary/80"
             >
-              {generateForecast.isPending ? (
+              {trainModel.isPending ? (
                 <>
                   <Loader2 className="mr-2 h-5 w-5 animate-spin" /> Treinando Modelo...
                 </>
               ) : (
                 <>
-                  <BrainCircuit className="mr-2 h-5 w-5" /> Gerar Previsão
+                  <BrainCircuit className="mr-2 h-5 w-5" /> Iniciar Treinamento
                 </>
               )}
             </Button>

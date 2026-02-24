@@ -1,40 +1,39 @@
-import { pgTable, text, serial, integer, json, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, json, timestamp, real } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
 export const datasets = pgTable("datasets", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
-  type: text("type").notNull(), // 'energy', 'stocks', 'traffic'
-  data: json("data").notNull(), // Array of records
+  type: text("type").notNull(),
+  data: json("data").notNull(),
+  fileHash: text("file_hash").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const forecasts = pgTable("forecasts", {
+export const models = pgTable("models", {
   id: serial("id").primaryKey(),
   datasetId: integer("dataset_id").notNull(),
-  modelUsed: text("model_used").notNull(),
+  datasetVersion: integer("dataset_version").default(1), // To be implemented based on hash changes
+  algorithm: text("algorithm").notNull(),
   targetVariable: text("target_variable").notNull(),
   features: json("features").notNull(), // Array of feature names
+  hyperparameters: json("hyperparameters"), // e.g., { "n_estimators": 100 }
+  trainingDuration: real("training_duration"), // in seconds
+  modelPath: text("model_path"), // Path to the serialized .pkl file
   horizon: integer("horizon").notNull(),
-  forecastData: json("forecast_data").notNull(), // Array of { date, actual, predicted, lower_bound, upper_bound }
+  forecastData: json("forecast_data").notNull(), // Stores the prediction made at training time
   metrics: json("metrics").notNull(), // MAE, RMSE, etc.
+  status: text("status").default('completed'), // 'training', 'completed', 'failed'
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+
 export const insertDatasetSchema = createInsertSchema(datasets).omit({ id: true, createdAt: true });
-export const insertForecastSchema = createInsertSchema(forecasts).omit({ id: true, createdAt: true });
+export const insertModelSchema = createInsertSchema(models).omit({ id: true, createdAt: true });
 
 export type Dataset = typeof datasets.$inferSelect;
 export type InsertDataset = z.infer<typeof insertDatasetSchema>;
 
-export type Forecast = typeof forecasts.$inferSelect;
-export type InsertForecast = z.infer<typeof insertForecastSchema>;
-
-export type GenerateForecastRequest = {
-  datasetId: number;
-  modelUsed: 'linear_regression' | 'random_forest';
-  targetVariable: string;
-  features: string[];
-  horizon: number;
-};
+export type Model = typeof models.$inferSelect;
+export type InsertModel = z.infer<typeof insertModelSchema>;

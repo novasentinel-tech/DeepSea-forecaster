@@ -9,9 +9,10 @@ import { AppLayout } from "@/components/layout/app-layout";
 // Pages
 import Dashboard from "@/pages/dashboard";
 import Datasets from "@/pages/datasets";
-import Forecasts from "@/pages/forecasts";
-import NewForecast from "@/pages/new-forecast";
-import ForecastDetail from "@/pages/forecast-detail";
+import Models from "@/pages/forecasts";
+import NewModel from "@/pages/new-forecast";
+import ModelDetail from "@/pages/forecast-detail";
+import { ThemeProvider } from "./components/theme-provider";
 
 function Router() {
   return (
@@ -19,9 +20,9 @@ function Router() {
       <Switch>
         <Route path="/" component={Dashboard} />
         <Route path="/datasets" component={Datasets} />
-        <Route path="/forecasts" component={Forecasts} />
-        <Route path="/forecasts/new" component={NewForecast} />
-        <Route path="/forecasts/:id" component={ForecastDetail} />
+        <Route path="/forecasts" component={Models} />
+        <Route path="/forecasts/new" component={NewModel} />
+        <Route path="/forecasts/:id" component={ModelDetail} />
         <Route component={NotFound} />
       </Switch>
     </AppLayout>
@@ -31,10 +32,12 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Router />
-      </TooltipProvider>
+      <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+        <TooltipProvider>
+          <Toaster />
+          <Router />
+        </TooltipProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }

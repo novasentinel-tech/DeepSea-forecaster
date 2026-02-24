@@ -1,11 +1,11 @@
 import { db } from "./db";
 import {
   datasets,
-  forecasts,
+  models,
   type Dataset,
   type InsertDataset,
-  type Forecast,
-  type InsertForecast,
+  type Model,
+  type InsertModel,
 } from "@shared/schema";
 import { eq } from "drizzle-orm";
 
@@ -14,9 +14,9 @@ export interface IStorage {
   getDataset(id: number): Promise<Dataset | undefined>;
   createDataset(dataset: InsertDataset): Promise<Dataset>;
   
-  getForecasts(): Promise<Forecast[]>;
-  getForecast(id: number): Promise<Forecast | undefined>;
-  createForecast(forecast: InsertForecast): Promise<Forecast>;
+  getModels(): Promise<Model[]>;
+  getModel(id: number): Promise<Model | undefined>;
+  createModel(model: InsertModel): Promise<Model>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -34,17 +34,17 @@ export class DatabaseStorage implements IStorage {
     return created;
   }
 
-  async getForecasts(): Promise<Forecast[]> {
-    return await db.select().from(forecasts);
+  async getModels(): Promise<Model[]> {
+    return await db.select().from(models);
   }
 
-  async getForecast(id: number): Promise<Forecast | undefined> {
-    const [forecast] = await db.select().from(forecasts).where(eq(forecasts.id, id));
-    return forecast;
+  async getModel(id: number): Promise<Model | undefined> {
+    const [model] = await db.select().from(models).where(eq(models.id, id));
+    return model;
   }
 
-  async createForecast(forecast: InsertForecast): Promise<Forecast> {
-    const [created] = await db.insert(forecasts).values(forecast).returning();
+  async createModel(model: InsertModel): Promise<Model> {
+    const [created] = await db.insert(models).values(model).returning();
     return created;
   }
 }

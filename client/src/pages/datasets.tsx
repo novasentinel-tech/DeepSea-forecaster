@@ -27,7 +27,6 @@ export default function Datasets() {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      // Validate JSON
       const parsedData = JSON.parse(formData.dataJson);
       if (!Array.isArray(parsedData)) {
         throw new Error("Data must be a JSON array");
@@ -135,9 +134,9 @@ export default function Datasets() {
               <TableRow className="border-border/50 hover:bg-transparent">
                 <TableHead>Nome</TableHead>
                 <TableHead>Domínio</TableHead>
+                <TableHead>Hash do Arquivo</TableHead>
                 <TableHead>Registros</TableHead>
                 <TableHead>Importado</TableHead>
-                <TableHead className="text-right">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -146,9 +145,9 @@ export default function Datasets() {
                   <TableRow key={i}>
                     <TableCell><div className="h-5 w-32 bg-secondary/50 rounded animate-pulse"></div></TableCell>
                     <TableCell><div className="h-5 w-20 bg-secondary/50 rounded animate-pulse"></div></TableCell>
+                    <TableCell><div className="h-5 w-24 bg-secondary/50 rounded animate-pulse"></div></TableCell>
                     <TableCell><div className="h-5 w-16 bg-secondary/50 rounded animate-pulse"></div></TableCell>
                     <TableCell><div className="h-5 w-24 bg-secondary/50 rounded animate-pulse"></div></TableCell>
-                    <TableCell></TableCell>
                   </TableRow>
                 ))
               ) : datasets?.length === 0 ? (
@@ -166,14 +165,12 @@ export default function Datasets() {
                         {ds.type}
                       </span>
                     </TableCell>
+                    <TableCell className="font-mono text-xs text-muted-foreground">{ds.fileHash.substring(0, 12)}...</TableCell>
                     <TableCell className="font-mono text-muted-foreground">
                       {Array.isArray(ds.data) ? ds.data.length.toLocaleString() : 0}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {ds.createdAt ? format(new Date(ds.createdAt), 'dd MMM, yyyy') : 'Desconhecido'}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="sm" className="h-8 text-xs hover-elevate">Ver Esquema</Button>
                     </TableCell>
                   </TableRow>
                 ))

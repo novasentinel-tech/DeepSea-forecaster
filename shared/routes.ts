@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { insertDatasetSchema, datasets, forecasts } from './schema';
+import { insertDatasetSchema, datasets, models } from './schema';
 
 export const errorSchemas = {
   validation: z.object({ message: z.string(), field: z.string().optional() }),
@@ -27,41 +27,41 @@ export const api = {
     create: {
       method: 'POST' as const,
       path: '/api/datasets' as const,
-      input: insertDatasetSchema,
+      input: insertDatasetSchema.omit({ fileHash: true }),
       responses: {
         201: z.custom<typeof datasets.$inferSelect>(),
         400: errorSchemas.validation,
       },
     },
   },
-  forecasts: {
+  models: {
     list: {
       method: 'GET' as const,
-      path: '/api/forecasts' as const,
+      path: '/api/models' as const,
       responses: {
-        200: z.array(z.custom<typeof forecasts.$inferSelect>()),
+        200: z.array(z.custom<typeof models.$inferSelect>()),
       },
     },
     get: {
       method: 'GET' as const,
-      path: '/api/forecasts/:id' as const,
+      path: '/api/models/:id' as const,
       responses: {
-        200: z.custom<typeof forecasts.$inferSelect>(),
+        200: z.custom<typeof models.$inferSelect>(),
         404: errorSchemas.notFound,
       },
     },
-    generate: {
+    train: {
       method: 'POST' as const,
-      path: '/api/forecasts/generate' as const,
+      path: '/api/models/train' as const,
       input: z.object({
         datasetId: z.number(),
-        modelUsed: z.enum(['linear_regression', 'random_forest']),
+        algorithm: z.enum(['linear_regression', 'random_forest']),
         targetVariable: z.string(),
         features: z.array(z.string()),
         horizon: z.number().min(1).max(365),
       }),
       responses: {
-        201: z.custom<typeof forecasts.$inferSelect>(),
+        201: z.custom<typeof models.$inferSelect>(),
         400: errorSchemas.validation,
         404: errorSchemas.notFound,
         500: errorSchemas.internal,
@@ -81,6 +81,3 @@ export function buildUrl(path: string, params?: Record<string, string | number>)
   }
   return url;
 }
-
-export type DatasetResponse = z.infer<typeof api.datasets.create.responses[201]>;
-export type ForecastResponse = z.infer<typeof api.forecasts.generate.responses[201]>;
