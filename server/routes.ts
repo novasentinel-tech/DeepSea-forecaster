@@ -44,12 +44,12 @@ async function runForecastModel(inputData: any): Promise<any> {
 export function registerRoutes(app: Express): void {
   const router = express.Router();
 
-  router.get(api.datasets.list.path.replace('/api', ''), async (req, res) => {
+  router.get(api.datasets.list.path, async (req, res) => {
     const items = await storage.getDatasets();
     res.json(items);
   });
 
-  router.get(api.datasets.get.path.replace('/api', ''), async (req, res) => {
+  router.get(api.datasets.get.path, async (req, res) => {
     const item = await storage.getDataset(Number(req.params.id));
     if (!item) {
       return res.status(404).json({ message: 'Dataset not found' });
@@ -57,7 +57,7 @@ export function registerRoutes(app: Express): void {
     res.json(item);
   });
 
-  router.post(api.datasets.create.path.replace('/api', ''), async (req, res) => {
+  router.post(api.datasets.create.path, async (req, res) => {
     try {
       const input = api.datasets.create.input.parse(req.body);
       const dataString = JSON.stringify(input.data);
@@ -73,12 +73,12 @@ export function registerRoutes(app: Express): void {
     }
   });
 
-  router.get(api.models.list.path.replace('/api', ''), async (req, res) => {
+  router.get(api.models.list.path, async (req, res) => {
     const items = await storage.getModels();
     res.json(items);
   });
 
-  router.get(api.models.get.path.replace('/api', ''), async (req, res) => {
+  router.get(api.models.get.path, async (req, res) => {
     const item = await storage.getModel(Number(req.params.id));
     if (!item) {
       return res.status(404).json({ message: 'Model not found' });
@@ -86,7 +86,7 @@ export function registerRoutes(app: Express): void {
     res.json(item);
   });
 
-  router.post(api.models.train.path.replace('/api', ''), async (req, res) => {
+  router.post(api.models.train.path, async (req, res) => {
     try {
       const input = api.models.train.input.parse(req.body);
       
@@ -136,5 +136,5 @@ export function registerRoutes(app: Express): void {
     }
   });
 
-  app.use('/api', router);
+  app.use(router);
 }
