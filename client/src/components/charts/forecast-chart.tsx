@@ -16,8 +16,7 @@ interface ForecastDataPoint {
   date: string;
   actual?: number | null;
   predicted?: number | null;
-  lower_bound?: number | null;
-  upper_bound?: number | null;
+  bounds?: [number, number] | null;
 }
 
 interface ForecastChartProps {
@@ -27,14 +26,12 @@ interface ForecastChartProps {
 }
 
 export function ForecastChart({ data, targetVariable, height = 400 }: ForecastChartProps) {
-  // Pre-process data for Recharts Area which accepts an array [min, max]
+  // The python script returns `bounds` as an array.
+  // The original code was trying to create `bounds` from `lower_bound` and `upper_bound`, which don't exist.
+  // This mapping just formats the date and leaves the rest of the data as-is.
   const processedData = useMemo(() => {
     return data.map(point => ({
       ...point,
-      // Create the range array for the confidence interval area
-      bounds: point.lower_bound != null && point.upper_bound != null 
-        ? [point.lower_bound, point.upper_bound] 
-        : null,
       // Format date for better display if it's an ISO string
       displayDate: (() => {
         try {
