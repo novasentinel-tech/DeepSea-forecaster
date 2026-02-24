@@ -10,7 +10,7 @@ import path from "path";
 async function runForecastModel(inputData: any): Promise<any> {
   return new Promise((resolve, reject) => {
     const scriptPath = path.join(process.cwd(), 'server', 'forecast.py');
-    const pythonProcess = spawn('python3', [scriptPath]);
+    const pythonProcess = spawn('.venv/bin/python', [scriptPath]);
     
     let stdoutData = '';
     let stderrData = '';
