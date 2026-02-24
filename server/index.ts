@@ -4,6 +4,21 @@ import { serveStatic } from "./static";
 import { createServer } from "http";
 import 'dotenv/config'
 
+// Add global error handlers at the very top
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('!!!!!!!!!! UNHANDLED REJECTION !!!!!!!!!');
+  console.error('Reason:', reason);
+  console.error('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('!!!!!!!!!! UNCAUGHT EXCEPTION !!!!!!!!!');
+  console.error('Error:', error);
+  console.error('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
+  process.exit(1); // It's often recommended to exit on uncaught exceptions
+});
+
+
 const app = express();
 const httpServer = createServer(app);
 
@@ -64,18 +79,24 @@ app.use((req, res, next) => {
   // Register API routes under the /api prefix
   app.use("/api", registerRoutes());
 
-  app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
+  app.use((err: any, req: Request, res: Response, next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
 
-    console.error("Internal Server Error:", err);
+    console.error(`--- EXPRESS ERROR HANDLER ---`);
+    console.error(`Request: ${req.method} ${req.originalUrl}`);
+    console.error(`Status: ${status}`);
+    console.error(`Message: ${message}`);
+    console.error(`Stack: ${err.stack || 'No stack trace'}`);
+    console.error(`---------------------------`);
 
     if (res.headersSent) {
       return next(err);
     }
 
-    return res.status(status).json({ message });
+    return res.status(status).json({ message, stack: process.env.NODE_ENV === 'development' ? err.stack : undefined });
   });
+
 
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route

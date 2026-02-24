@@ -11,6 +11,7 @@ import express from "express";
 async function runForecastModel(inputData: any): Promise<any> {
   return new Promise((resolve, reject) => {
     const scriptPath = path.join(process.cwd(), 'server', 'forecast.py');
+    console.log(`[runForecastModel] Spawning Python script: ${scriptPath}`);
     const pythonProcess = spawn('.venv/bin/python', [scriptPath]);
     
     let stdoutData = '';
@@ -25,26 +26,40 @@ async function runForecastModel(inputData: any): Promise<any> {
     });
     
     pythonProcess.on('close', (code) => {
+      console.log(`[runForecastModel] Python script finished with code ${code}.`);
+      if (stderrData) {
+        console.error(`[runForecastModel] STDERR: ${stderrData}`);
+      }
+      if (stdoutData) {
+        // Log stdout but be careful not to log huge datasets
+        const preview = stdoutData.length > 500 ? stdoutData.substring(0, 500) + '...' : stdoutData;
+        console.log(`[runForecastModel] STDOUT: ${preview}`);
+      }
+
       if (code !== 0) {
-        reject(new Error(`Python script failed with code ${code}: ${stderrData}`));
+        reject(new Error(`Python script failed with code ${code}. STDERR: ${stderrData}`));
       } else {
         try {
           const result = JSON.parse(stdoutData);
           if (result.error) {
-            // Forward the structured error from the Python script
+            console.error('[runForecastModel] Python script returned a structured error.');
             return reject(new Error(`Forecast script error: ${result.error}\nTraceback: ${result.traceback}`));
           }
+          console.log('[runForecastModel] Python script successful. Parsed JSON result.');
           resolve(result);
         } catch (e) {
-          reject(new Error(`Failed to parse python output: ${stdoutData}`));
+          console.error('[runForecastModel] Failed to parse JSON from Python script stdout.');
+          reject(new Error(`Failed to parse Python script output. Check STDOUT in logs.`));
         }
       }
     });
     
+    console.log('[runForecastModel] Writing input to stdin.');
     pythonProcess.stdin.write(JSON.stringify(inputData));
     pythonProcess.stdin.end();
   });
 }
+
 
 export function registerRoutes(): express.Router {
   const router = express.Router();
@@ -62,7 +77,7 @@ export function registerRoutes(): express.Router {
     res.json(item);
   });
 
-  router.post(api.datasets.create.path.replace('/api', ''), async (req, res) => {
+  router.post(api.datasets.create.path.replace('/api', ''), async (req, res, next) => {
     try {
       const input = api.datasets.create.input.parse(req.body);
       const dataString = JSON.stringify(input.data);
@@ -71,10 +86,10 @@ export function registerRoutes(): express.Router {
       const item = await storage.createDataset({ ...input, fileHash });
       res.status(201).json(item);
     } catch (err) {
-      if (err instanceof z.ZodError) {
+       if (err instanceof z.ZodError) {
         return res.status(400).json({ message: err.errors[0].message, field: err.errors[0].path.join('.') });
       }
-      res.status(500).json({ message: 'Internal server error' });
+      next(err);
     }
   });
 
@@ -91,19 +106,25 @@ export function registerRoutes(): express.Router {
     res.json(item);
   });
 
-  router.post(api.models.train.path.replace('/api', ''), async (req, res) => {
+  router.post(api.models.train.path.replace('/api', ''), async (req, res, next) => {
+    const reqPath = `[API] POST ${req.path}`;
     try {
+      console.log(`${reqPath} - Request received.`);
       const input = api.models.train.input.parse(req.body);
       
+      console.log(`${reqPath} - Fetching dataset: ${input.datasetId}`);
       const dataset = await storage.getDataset(input.datasetId);
       if (!dataset) {
+        console.error(`${reqPath} - Dataset not found: ${input.datasetId}`);
         return res.status(404).json({ message: 'Dataset not found' });
       }
 
       if (!Array.isArray(dataset.data)) {
+        console.error(`${reqPath} - Dataset data is not an array.`);
         return res.status(400).json({ message: 'Dataset data is not in the expected array format.' });
       }
 
+      console.log(`${reqPath} - Calling Python script...`);
       const result = await runForecastModel({
         data: dataset.data,
         targetVariable: input.targetVariable,
@@ -113,10 +134,11 @@ export function registerRoutes(): express.Router {
         horizon: input.horizon,
         forecastStartDate: input.forecastStartDate,
       });
+      console.log(`${reqPath} - Python script succeeded.`);
 
       const model = await storage.createModel({
         datasetId: input.datasetId,
-        algorithm: result.trainingConfig.modelUsed, // Use the model selected by the script
+        algorithm: result.trainingConfig.modelUsed,
         targetVariable: input.targetVariable,
         features: result.featuresUsed,
         horizon: input.horizon,
@@ -130,14 +152,12 @@ export function registerRoutes(): express.Router {
         datasetVersion: 1, // Placeholder
       });
 
+      console.log(`${reqPath} - Model created in DB. Sending 201 response.`);
       res.status(201).json(model);
     } catch (err) {
-      if (err instanceof z.ZodError) {
-        return res.status(400).json({ message: err.errors[0].message, field: err.errors[0].path.join('.') });
-      }
-      console.error(err);
-      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred during model training.';
-      res.status(500).json({ message: errorMessage });
+      console.error(`${reqPath} - ERROR:`, err);
+      // Pass the error to the Express error handler
+      next(err);
     }
   });
 
