@@ -26,16 +26,13 @@ interface ForecastChartProps {
 }
 
 export function ForecastChart({ data, targetVariable, height = 400 }: ForecastChartProps) {
-  // The python script returns `bounds` as an array.
-  // The original code was trying to create `bounds` from `lower_bound` and `upper_bound`, which don't exist.
-  // This mapping just formats the date and leaves the rest of the data as-is.
   const processedData = useMemo(() => {
+    if (!data) return [];
     return data.map(point => ({
       ...point,
-      // Format date for better display if it's an ISO string
       displayDate: (() => {
         try {
-          return format(parseISO(point.date), 'MMM dd, yyyy');
+          return format(parseISO(point.date), 'MMM dd');
         } catch {
           return point.date;
         }
@@ -78,7 +75,7 @@ export function ForecastChart({ data, targetVariable, height = 400 }: ForecastCh
             tickLine={false}
             axisLine={false}
             dy={10}
-            minTickGap={30}
+            minTickGap={20}
           />
           
           <YAxis 
