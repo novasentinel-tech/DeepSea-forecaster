@@ -61,8 +61,8 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Register API routes before any other middleware that could catch the request.
-  registerRoutes(app);
+  // Register API routes under the /api prefix
+  app.use("/api", registerRoutes());
 
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
     const status = err.status || err.statusCode || 500;

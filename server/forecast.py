@@ -17,7 +17,8 @@ import uuid
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
+    datefmt='%Y-%m-%d %H:%M:%S',
+    stream=sys.stderr
 )
 logger = logging.getLogger(__name__)
 
@@ -47,13 +48,12 @@ def create_features(df, target_variable):
     df['year'] = df['date'].dt.year
     df['dayofyear'] = df['date'].dt.dayofyear
     df['weekofyear'] = df['date'].dt.isocalendar().week.astype(int)
-    df['is_weekend'] = (df['dayofweek'] >= 5).astype(int)   # Saturday=5, Sunday=6
     
-    # Placeholder for holiday feature - in a real scenario you would merge with an external holiday calendar
-    # For demonstration, we treat holidays as weekends (can be replaced with actual holiday data)
-    # Here we just create an empty column; in production you would populate it.
-    # Since we cannot know future holidays without external data, we'll leave it as 0 for now.
-    df['is_holiday'] = 0  # Placeholder: user can override if they provide holiday data
+    if 'is_weekend' not in df.columns:
+        df['is_weekend'] = (df['dayofweek'] >= 5).astype(int)
+
+    if 'is_holiday' not in df.columns:
+        df['is_holiday'] = 0
 
     # Lag features (only past values, no future leakage)
     for lag in [1, 7, 14]:
@@ -86,8 +86,6 @@ def calculate_metrics(y_true, y_pred):
     rmse = np.sqrt(mean_squared_error(y_true, y_pred))
     r2 = r2_score(y_true, y_pred)
     
-    # MAPE: avoid division by zero by replacing zeros with a small number or ignore them
-    # Here we use a safe version: filter out zeros in y_true
     y_true_safe = np.array(y_true)
     y_pred_safe = np.array(y_pred)
     non_zero_mask = y_true_safe != 0
@@ -123,6 +121,9 @@ def train_and_evaluate(model, X, y, n_splits=5):
     dict
         Dictionary with average MAE, RMSE, residual standard deviation, and also per-fold details.
     """
+    if len(X) < n_splits + 1:
+        raise ValueError("Not enough samples for the given number of splits in TimeSeriesSplit.")
+
     tscv = TimeSeriesSplit(n_splits=n_splits)
     mae_scores, rmse_scores, r2_scores, mape_scores = [], [], [], []
     residuals = np.array([])
@@ -135,7 +136,6 @@ def train_and_evaluate(model, X, y, n_splits=5):
         model.fit(X_train, y_train)
         y_pred_test = model.predict(X_test)
 
-        # Calculate metrics for this fold
         fold_metrics = calculate_metrics(y_test, y_pred_test)
         mae_scores.append(fold_metrics["mae"])
         rmse_scores.append(fold_metrics["rmse"])
@@ -165,48 +165,29 @@ def train_and_evaluate(model, X, y, n_splits=5):
 def infer_frequency(dates):
     """
     Infer the most common frequency between consecutive dates.
-
-    Parameters
-    ----------
-    dates : pd.Series
-        Sorted datetime series.
-
-    Returns
-    -------
-    pd.Timedelta or None
-        Inferred frequency, or None if cannot determine.
     """
     if len(dates) < 2:
         return None
     diffs = dates.diff().dropna()
-    # Use the most frequent diff as frequency
+    if diffs.empty:
+        return None
     mode_diff = diffs.mode()
-    if len(mode_diff) > 0:
+    if not mode_diff.empty:
         return mode_diff.iloc[0]
-    # Fallback to median
     return diffs.median()
 
 def main():
-    # Ensure models directory exists
     models_dir = 'models'
     if not os.path.exists(models_dir):
         os.makedirs(models_dir)
         logger.info(f"Created directory: {models_dir}")
 
-    # Read input from stdin
     input_str = sys.stdin.read()
     if not input_str:
-        logger.error("No input received")
-        print(json.dumps({"error": "No input received"}))
-        return
+        raise ValueError("No input received from stdin")
 
-    try:
-        request = json.loads(input_str)
-    except json.JSONDecodeError as e:
-        logger.error(f"Invalid JSON input: {e}")
-        print(json.dumps({"error": "Invalid JSON input"}))
-        sys.exit(1)
-
+    request = json.loads(input_str)
+    
     data = request.get("data", [])
     target = request.get("targetVariable")
     user_features = request.get("features", [])
@@ -215,72 +196,59 @@ def main():
     horizon = request.get("horizon", 30)
     forecast_start_date_str = request.get("forecastStartDate")
 
-
-    # Validate input
     if not data or not target:
-        logger.error("Missing data or target variable")
-        print(json.dumps({"error": "Missing data or target variable"}))
-        sys.exit(1)
+        raise ValueError("Missing data or target variable")
 
     df = pd.DataFrame(data)
 
     if "date" not in df.columns:
-        logger.error("Input data must contain a 'date' column")
-        print(json.dumps({"error": "Input data must contain a 'date' column."}))
-        sys.exit(1)
+        raise ValueError("Input data must contain a 'date' column.")
 
-    # Convert date and sort
     df["date"] = pd.to_datetime(df["date"])
     df = df.sort_values("date").reset_index(drop=True)
 
-    # Check for duplicate dates
     if df["date"].duplicated().any():
         logger.warning("Duplicate dates found. Keeping first occurrence.")
         df = df.drop_duplicates(subset=["date"], keep="first").reset_index(drop=True)
 
-    # Data Cleaning: forward fill and drop remaining NaNs (no data leakage)
-    df = df.ffill().dropna().reset_index(drop=True)
+    # Use forward fill for missing values, then drop any rows that still have NaNs
+    # This prevents data leakage from the future (bfill)
+    df = df.ffill().dropna(subset=[target] + user_features).reset_index(drop=True)
     logger.info(f"Data shape after cleaning: {df.shape}")
 
-    # Feature Engineering
-    logger.info("Creating features...")
     engineered_df = create_features(df.copy(), target)
+    
+    # Define feature sets
     engineered_feature_names = [col for col in engineered_df.columns if col.startswith(f'{target}_lag_') or col.startswith(f'{target}_rolling_')]
     date_feature_names = ['dayofweek', 'month', 'year', 'dayofyear', 'weekofyear', 'is_weekend', 'is_holiday']
+    
+    # Combine and ensure no duplicates and target is not in features
     final_features = sorted(list(set(user_features + engineered_feature_names + date_feature_names)))
     final_features = [f for f in final_features if f in engineered_df.columns and f != target]
 
-    # Drop rows with NaNs created by lags/rolling
+    # Drop rows with NaNs created by feature engineering (lags/rolling)
     final_df = engineered_df.dropna().reset_index(drop=True)
-    logger.info(f"Final data shape after feature engineering (NaNs dropped): {final_df.shape}")
-
-    if len(final_df) < 20: # Arbitrary threshold, needs enough data for even one split
-        logger.error("No data left after feature engineering. Possibly too short series.")
-        print(json.dumps({"error": "Insufficient data after feature engineering to perform validation. Please provide a longer time series."}))
-        sys.exit(1)
+    
+    if final_df.empty:
+        raise ValueError("No data left after feature engineering. The time series might be too short for the defined lags/rolling windows.")
 
     X = final_df[final_features]
     y = final_df[target]
 
-    logger.info(f"Features used: {final_features}")
-    logger.info(f"Number of samples: {len(X)}")
+    logger.info(f"Features used ({len(final_features)}): {final_features}")
+    logger.info(f"Number of samples for training/validation: {len(X)}")
 
-    # Start timing
     start_time = time.time()
-
+    
+    models_to_try = ["linear_regression", "random_forest"] if model_choice == "auto" else [model_choice]
+    
     best_model = None
     best_model_name = ""
     best_metrics = {"rmse": float('inf')}
     comparison_results = {}
 
-    models_to_try = []
-    if model_choice == "auto":
-        models_to_try = ["linear_regression", "random_forest"]
-    else:
-        models_to_try = [model_choice]
-
     for model_name in models_to_try:
-        logger.info(f"Training {model_name}...")
+        logger.info(f"Evaluating {model_name}...")
         if model_name == "random_forest":
             model_instance = RandomForestRegressor(
                 n_estimators=hyperparameters.get('n_estimators', 100),
@@ -300,57 +268,62 @@ def main():
             best_model = model_instance
             best_model_name = model_name
 
-    logger.info(f"Best model: {best_model_name} with RMSE={best_metrics['rmse']:.4f}")
+    logger.info(f"Best model selected: {best_model_name} with RMSE={best_metrics['rmse']:.4f}")
 
-    # Retrain best model on full data
-    logger.info("Retraining best model on full dataset...")
+    logger.info("Retraining best model on the full dataset...")
     best_model.fit(X, y)
     y_pred_full_insample = best_model.predict(X)
 
-    # Feature importance (if applicable)
     feature_importance = {}
-    if best_model_name == "random_forest":
+    if hasattr(best_model, 'feature_importances_'):
         importances = best_model.feature_importances_
         feature_importance = dict(sorted(zip(final_features, importances), key=lambda item: item[1], reverse=True))
         logger.info("Feature importance calculated.")
 
     training_duration = time.time() - start_time
-    logger.info(f"Training completed in {training_duration:.2f} seconds")
+    logger.info(f"Total training and evaluation time: {training_duration:.2f} seconds")
 
-    # Save model
     model_id = str(uuid.uuid4())
     model_path = os.path.join(models_dir, f"{model_id}.pkl")
     joblib.dump(best_model, model_path)
     logger.info(f"Model saved to {model_path}")
 
-    # --- Generate Future Forecast (Iteratively) ---
+    # --- Iterative Future Forecast ---
     margin_of_error = 1.96 * best_metrics["residual_std"]
-
     history_df = final_df.copy()
     future_predictions = []
 
     last_date = history_df["date"].iloc[-1]
     freq = infer_frequency(history_df["date"])
     if freq is None:
-        freq = pd.Timedelta(days=1)  # default to daily
-        logger.warning("Could not infer frequency; defaulting to daily.")
-        
+        freq = pd.Timedelta(days=1)
+        logger.warning(f"Could not infer frequency; defaulting to daily ({freq}).")
+    
     start_date = pd.to_datetime(forecast_start_date_str) if forecast_start_date_str else (last_date + freq)
-
     future_dates = pd.date_range(start=start_date, periods=horizon, freq=freq)
-    logger.info(f"Forecasting {horizon} steps ahead with frequency {freq}")
+
+    logger.info(f"Forecasting {horizon} steps ahead from {start_date.date()} with frequency {freq}")
 
     for date in future_dates:
-        temp_history_for_features = create_features(history_df, target)
-        next_step_features = temp_history_for_features.iloc[[-1]][final_features]
-        prediction = best_model.predict(next_step_features)[0]
+        temp_df_for_features = history_df.copy()
+        temp_df_for_features = create_features(temp_df_for_features, target)
+        
+        last_known_features = temp_df_for_features.iloc[[-1]][final_features]
+        prediction = best_model.predict(last_known_features)[0]
         future_predictions.append(prediction)
 
-        new_row_dict = {col: [None] for col in history_df.columns}
-        new_row_dict['date'] = [date]
-        new_row_dict[target] = [prediction]
-        new_row = pd.DataFrame(new_row_dict)
+        new_row_dict = {col: None for col in history_df.columns}
+        new_row_dict['date'] = date
+        new_row_dict[target] = prediction
+
+        for feat in user_features:
+            if feat in new_row_dict:
+                # Naive assumption: carry forward the last known value for user-provided features
+                new_row_dict[feat] = history_df[feat].iloc[-1]
+
+        new_row = pd.DataFrame([new_row_dict])
         history_df = pd.concat([history_df, new_row], ignore_index=True)
+
 
     # --- Construct Chart Data ---
     forecast_data = []
@@ -380,12 +353,6 @@ def main():
             "residual_std": float(best_metrics["residual_std"])
         },
         "featuresUsed": final_features,
-        "autoGeneratedFeatures": {
-            "lag": [1, 7, 14],
-            "rolling_mean": [7, 14],
-            "rolling_std": [7, 14],
-            "date_features": date_feature_names
-        },
         "forecastData": forecast_data,
         "modelPath": model_path,
         "trainingDuration": training_duration,
@@ -409,26 +376,22 @@ def main():
     print(json.dumps(result, allow_nan=False))
     logger.info("Forecast generation completed successfully.")
 
-
 if __name__ == "__main__":
     try:
         main()
     except Exception as e:
         import traceback
-        import sys
-        import json
-
-        # Captura o traceback completo
+        
+        logger.error(f"An unhandled exception occurred: {str(e)}")
         tb = traceback.format_exc()
-
-        # Log no console (opcional, mas útil)
+        
+        # Log to stderr so it doesn't pollute stdout
+        print(f"FATAL_ERROR: {str(e)}", file=sys.stderr)
         print(tb, file=sys.stderr)
 
-        # Retorna um JSON consistente com erro
+        # Return a consistent JSON error to stdout
         print(json.dumps({
             "error": str(e),
             "traceback": tb
         }))
         sys.exit(1)
-
-    
