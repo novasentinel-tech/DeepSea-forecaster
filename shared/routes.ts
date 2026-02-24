@@ -59,6 +59,7 @@ export const api = {
         targetVariable: z.string(),
         features: z.array(z.string()),
         horizon: z.number().min(1).max(365),
+        forecastStartDate: z.string().optional(),
         hyperparameters: z.object({
           n_estimators: z.number().optional(),
           max_depth: z.number().optional(),

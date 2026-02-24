@@ -83,6 +83,8 @@ def main():
     model_choice = request.get("algorithm", "auto")
     hyperparameters = request.get("hyperparameters", {})
     horizon = request.get("horizon", 30)
+    forecast_start_date = request.get("forecastStartDate", None)
+
 
     if not data or not target:
         print(json.dumps({"error": "Missing data or target variable"}))
@@ -166,9 +168,14 @@ def main():
     history_df = final_df.copy()
     future_predictions = []
     
-    last_date = history_df["date"].iloc[-1]
+    if forecast_start_date:
+        start_date = pd.to_datetime(forecast_start_date)
+    else:
+        last_date = history_df["date"].iloc[-1]
+        start_date = last_date + history_df["date"].diff().median()
+
     freq = history_df["date"].diff().median()
-    future_dates = pd.date_range(start=last_date + freq, periods=horizon, freq=freq)
+    future_dates = pd.date_range(start=start_date, periods=horizon, freq=freq)
 
     for date in future_dates:
         # Create features for the single next step based on current history

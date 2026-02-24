@@ -105,7 +105,8 @@ export function registerRoutes(app: Express): void {
         features: input.features,
         algorithm: input.algorithm,
         hyperparameters: input.hyperparameters || {},
-        horizon: input.horizon
+        horizon: input.horizon,
+        forecastStartDate: input.forecastStartDate,
       });
 
       const model = await storage.createModel({
