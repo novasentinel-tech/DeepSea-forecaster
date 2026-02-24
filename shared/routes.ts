@@ -55,7 +55,7 @@ export const api = {
       path: '/api/models/train' as const,
       input: z.object({
         datasetId: z.number(),
-        algorithm: z.enum(['linear_regression', 'random_forest']),
+        algorithm: z.enum(['linear_regression', 'random_forest', 'auto']),
         targetVariable: z.string(),
         features: z.array(z.string()),
         horizon: z.number().min(1).max(365),

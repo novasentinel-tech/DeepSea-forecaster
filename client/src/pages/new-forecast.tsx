@@ -18,7 +18,7 @@ export default function NewForecast() {
   const { toast } = useToast();
 
   const [datasetId, setDatasetId] = useState<string>("");
-  const [algorithm, setAlgorithm] = useState<"linear_regression" | "random_forest">("random_forest");
+  const [algorithm, setAlgorithm] = useState<"auto" | "linear_regression" | "random_forest">("auto");
   const [target, setTarget] = useState<string>("");
   const [features, setFeatures] = useState<string[]>([]);
   const [horizon, setHorizon] = useState<string>("30");
@@ -159,6 +159,7 @@ export default function NewForecast() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="auto">Automático (Melhor Escolha)</SelectItem>
                       <SelectItem value="random_forest">Random Forest (Ensemble)</SelectItem>
                       <SelectItem value="linear_regression">Regressão Linear</SelectItem>
                     </SelectContent>
