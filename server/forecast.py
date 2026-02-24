@@ -36,6 +36,31 @@ def create_features(df, target_variable):
         
     return df
 
+def train_and_evaluate(model, X, y, n_splits=5):
+    """
+    Train a model using Time Series Cross-Validation and return metrics.
+    """
+    tscv = TimeSeriesSplit(n_splits=n_splits)
+    mae_scores, rmse_scores = [], []
+    residuals = np.array([])
+    
+    for train_index, test_index in tscv.split(X):
+        X_train, X_test = X.iloc[train_index], X.iloc[test_index]
+        y_train, y_test = y.iloc[train_index], y.iloc[test_index]
+
+        model.fit(X_train, y_train)
+        y_pred_test = model.predict(X_test)
+        
+        mae_scores.append(mean_absolute_error(y_test, y_pred_test))
+        rmse_scores.append(np.sqrt(mean_squared_error(y_test, y_pred_test)))
+        residuals = np.concatenate([residuals, y_test - y_pred_test])
+        
+    return {
+        "mae": np.mean(mae_scores),
+        "rmse": np.mean(rmse_scores),
+        "residual_std": np.std(residuals)
+    }
+
 def main():
     # Ensure models directory exists
     models_dir = 'models'
@@ -55,7 +80,7 @@ def main():
     data = request.get("data", [])
     target = request.get("targetVariable")
     user_features = request.get("features", [])
-    model_name = request.get("modelUsed", "linear_regression")
+    model_choice = request.get("algorithm", "auto")
     hyperparameters = request.get("hyperparameters", {})
     horizon = request.get("horizon", 30)
 
@@ -73,40 +98,36 @@ def main():
     df = df.sort_values("date").reset_index(drop=True)
     
     # --- Data Cleaning (No Data Leakage) ---
-    # Use forward fill and then drop any remaining NaNs at the beginning
-    df = df.ffill().dropna()
-    df = df.reset_index(drop=True)
+    df = df.ffill().dropna().reset_index(drop=True)
 
     # --- Feature Engineering ---
     engineered_df = create_features(df.copy(), target)
-    
     engineered_feature_names = [col for col in engineered_df.columns if col.startswith(f'{target}_lag_') or col.startswith(f'{target}_rolling_')]
     date_feature_names = ['dayofweek', 'month', 'year', 'dayofyear', 'weekofyear']
-    
     final_features = sorted(list(set(user_features + engineered_feature_names + date_feature_names)))
     final_features = [f for f in final_features if f in engineered_df.columns and f != target]
 
     # Drop NaNs created by feature engineering
-    engineered_df = engineered_df.dropna().reset_index(drop=True)
-    
-    X = engineered_df[final_features]
-    y = engineered_df[target]
-
-    # --- Time Series Cross-Validation ---
-    n_splits = 5
-    tscv = TimeSeriesSplit(n_splits=n_splits)
-    
-    mae_scores = []
-    rmse_scores = []
-    residuals = np.array([])
+    final_df = engineered_df.dropna().reset_index(drop=True)
+    X = final_df[final_features]
+    y = final_df[target]
     
     start_time = time.time()
-    for train_index, test_index in tscv.split(X):
-        X_train, X_test = X.iloc[train_index], X.iloc[test_index]
-        y_train, y_test = y.iloc[train_index], y.iloc[test_index]
+    
+    best_model = None
+    best_model_name = ""
+    best_metrics = {"rmse": float('inf')}
+    comparison_results = {}
 
+    models_to_try = []
+    if model_choice == "auto":
+        models_to_try = ["linear_regression", "random_forest"]
+    else:
+        models_to_try = [model_choice]
+
+    for model_name in models_to_try:
         if model_name == "random_forest":
-            model_cv = RandomForestRegressor(
+            model_instance = RandomForestRegressor(
                 n_estimators=hyperparameters.get('n_estimators', 100),
                 max_depth=hyperparameters.get('max_depth', None),
                 min_samples_split=hyperparameters.get('min_samples_split', 2),
@@ -114,102 +135,80 @@ def main():
                 n_jobs=-1
             )
         else:
-            model_cv = LinearRegression()
-
-        model_cv.fit(X_train, y_train)
-        y_pred_test = model_cv.predict(X_test)
+            model_instance = LinearRegression()
         
-        mae_scores.append(mean_absolute_error(y_test, y_pred_test))
-        rmse_scores.append(np.sqrt(mean_squared_error(y_test, y_pred_test)))
-        residuals = np.concatenate([residuals, y_test - y_pred_test])
-    
-    training_duration = time.time() - start_time
-
-    # Calculate average metrics and residual std
-    avg_mae = np.mean(mae_scores)
-    avg_rmse = np.mean(rmse_scores)
-    residual_std = np.std(residuals)
-
-    # --- Retrain on Full Data for Future Predictions and Feature Importance ---
-    if model_name == "random_forest":
-        full_model = RandomForestRegressor(
-            n_estimators=hyperparameters.get('n_estimators', 100),
-            max_depth=hyperparameters.get('max_depth', None),
-            min_samples_split=hyperparameters.get('min_samples_split', 2),
-            random_state=42,
-            n_jobs=-1
-        )
-    else:
-        full_model = LinearRegression()
+        metrics = train_and_evaluate(model_instance, X, y)
+        comparison_results[model_name] = {"rmse": metrics["rmse"]}
         
-    full_model.fit(X, y)
-    y_pred_full_insample = full_model.predict(X)
+        if metrics["rmse"] < best_metrics["rmse"]:
+            best_metrics = metrics
+            best_model = model_instance
+            best_model_name = model_name
+
+    # --- Retrain the best model on Full Data ---
+    best_model.fit(X, y)
+    y_pred_full_insample = best_model.predict(X)
 
     feature_importance = {}
-    if model_name == "random_forest":
-        importances = full_model.feature_importances_
+    if best_model_name == "random_forest":
+        importances = best_model.feature_importances_
         feature_importance = dict(sorted(zip(final_features, importances), key=lambda item: item[1], reverse=True))
 
+    training_duration = time.time() - start_time
+    
     model_id = str(uuid.uuid4())
     model_path = os.path.join(models_dir, f"{model_id}.pkl")
-    joblib.dump(full_model, model_path)
+    joblib.dump(best_model, model_path)
 
     # --- Generate Future Forecast (Iteratively) ---
-    margin_of_error = 1.96 * residual_std
+    margin_of_error = 1.96 * best_metrics["residual_std"]
     
-    history = engineered_df.copy()
-    y_pred_future = []
+    history_df = final_df.copy()
+    future_predictions = []
     
-    last_date = history["date"].iloc[-1]
-    freq = history["date"].diff().median()
+    last_date = history_df["date"].iloc[-1]
+    freq = history_df["date"].diff().median()
     future_dates = pd.date_range(start=last_date + freq, periods=horizon, freq=freq)
 
     for date in future_dates:
-        # Create features for the single next step
-        next_step_df = history.iloc[[-1]].copy()
-        next_step_df['date'] = date
+        # Create features for the single next step based on current history
+        temp_history_for_features = create_features(history_df, target)
+        next_step_features = temp_history_for_features.iloc[[-1]][final_features]
         
-        # Recalculate date-based features
-        next_step_df['dayofweek'] = next_step_df['date'].dt.dayofweek
-        next_step_df['month'] = next_step_df['date'].dt.month
-        next_step_df['year'] = next_step_df['date'].dt.year
-        next_step_df['dayofyear'] = next_step_df['date'].dt.dayofyear
-        next_step_df['weekofyear'] = next_step_df['date'].dt.isocalendar().week.astype(int)
-
-        X_next = next_step_df[final_features]
-        prediction = full_model.predict(X_next)[0]
-        y_pred_future.append(prediction)
+        prediction = best_model.predict(next_step_features)[0]
+        future_predictions.append(prediction)
         
-        # Append the prediction to history to be used for next step's features
-        new_row = next_step_df.copy()
-        new_row[target] = prediction
-        history = pd.concat([history, new_row], ignore_index=True)
-        # Re-create lag/rolling features based on the new "history"
-        history = create_features(history, target)
+        # Append the new prediction to history to use in the next iteration
+        new_row_dict = {col: [None] for col in history_df.columns}
+        new_row_dict['date'] = [date]
+        new_row_dict[target] = [prediction]
+        new_row = pd.DataFrame(new_row_dict)
+        
+        history_df = pd.concat([history_df, new_row], ignore_index=True)
 
     # --- Construct Chart Data ---
     forecast_data = []
     
-    for i in range(len(engineered_df)):
+    for i in range(len(final_df)):
         forecast_data.append({
-            "date": engineered_df["date"].iloc[i].strftime("%Y-%m-%d"),
-            "actual": float(engineered_df[target].iloc[i]),
+            "date": final_df["date"].iloc[i].strftime("%Y-%m-%d"),
+            "actual": float(final_df[target].iloc[i]),
             "predicted": float(y_pred_full_insample[i]),
-            "bounds": None # No bounds for historical fit for clarity
+            "bounds": None
         })
         
     for i in range(horizon):
         forecast_data.append({
             "date": future_dates[i].strftime("%Y-%m-%d"),
             "actual": None,
-            "predicted": float(y_pred_future[i]),
-            "bounds": [float(y_pred_future[i] - margin_of_error), float(y_pred_future[i] + margin_of_error)]
+            "predicted": float(future_predictions[i]),
+            "bounds": [float(future_predictions[i] - margin_of_error), float(future_predictions[i] + margin_of_error)]
         })
 
     result = {
         "metrics": {
-            "mae": float(avg_mae),
-            "rmse": float(avg_rmse)
+            "mae": float(best_metrics["mae"]),
+            "rmse": float(best_metrics["rmse"])
         },
         "featuresUsed": final_features,
         "forecastData": forecast_data,
@@ -217,9 +216,11 @@ def main():
         "trainingDuration": training_duration,
         "featureImportance": feature_importance,
         "trainingConfig": {
-            "model": model_name,
-            "hyperparameters": hyperparameters,
-            "splits": n_splits,
+            "modelUsed": best_model_name,
+            "algorithmChoice": model_choice,
+            "comparison": comparison_results,
+            "hyperparameters": hyperparameters if best_model_name == 'random_forest' else {},
+            "splits": 5,
             "featureEngineering": True
         }
     }

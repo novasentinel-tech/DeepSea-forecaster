@@ -59,6 +59,10 @@ export const api = {
         targetVariable: z.string(),
         features: z.array(z.string()),
         horizon: z.number().min(1).max(365),
+        hyperparameters: z.object({
+          n_estimators: z.number().optional(),
+          max_depth: z.number().optional(),
+        }).optional(),
       }),
       responses: {
         201: z.custom<typeof models.$inferSelect>(),

@@ -99,26 +99,22 @@ export function registerRoutes(app: Express): void {
         return res.status(400).json({ message: 'Dataset data is not in the expected array format.' });
       }
 
-      const hyperparameters = input.algorithm === 'random_forest' 
-        ? { n_estimators: 100 }
-        : {};
-
       const result = await runForecastModel({
         data: dataset.data,
         targetVariable: input.targetVariable,
         features: input.features,
-        modelUsed: input.algorithm,
-        hyperparameters,
+        algorithm: input.algorithm,
+        hyperparameters: input.hyperparameters || {},
         horizon: input.horizon
       });
 
       const model = await storage.createModel({
         datasetId: input.datasetId,
-        algorithm: input.algorithm,
+        algorithm: result.trainingConfig.modelUsed, // Use the model selected by the script
         targetVariable: input.targetVariable,
         features: result.featuresUsed,
         horizon: input.horizon,
-        hyperparameters,
+        hyperparameters: result.trainingConfig.hyperparameters,
         modelPath: result.modelPath,
         trainingDuration: result.trainingDuration,
         forecastData: result.forecastData,
