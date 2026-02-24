@@ -176,7 +176,9 @@ export default function Datasets() {
                         {ds.type}
                       </span>
                     </TableCell>
-                    <TableCell className="font-mono text-xs text-muted-foreground">{ds.fileHash.substring(0, 12)}...</TableCell>
+                    <TableCell className="font-mono text-xs text-muted-foreground">
+                      {ds.fileHash ? `${ds.fileHash.substring(0, 12)}...` : 'N/A'}
+                    </TableCell>
                     <TableCell className="font-mono text-muted-foreground">
                       {Array.isArray(ds.data) ? ds.data.length.toLocaleString() : 0}
                     </TableCell>
