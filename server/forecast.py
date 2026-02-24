@@ -14,7 +14,7 @@ import os
 import uuid
 import traceback
 
-# Configure logging
+# Configure logging to write to stderr
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
@@ -26,20 +26,7 @@ logger = logging.getLogger(__name__)
 def create_features(df, target_variable):
     """
     Creates time series features from a datetime index.
-
-    Parameters
-    ----------
-    df : pd.DataFrame
-        DataFrame with a 'date' column.
-    target_variable : str
-        Name of the target column.
-
-    Returns
-    -------
-    pd.DataFrame
-        DataFrame with original columns plus new engineered features.
     """
-    # Make a copy to avoid modifying the original DataFrame
     df = df.copy()
     df['date'] = pd.to_datetime(df['date'])
     
@@ -56,11 +43,11 @@ def create_features(df, target_variable):
     if 'is_holiday' not in df.columns:
         df['is_holiday'] = 0
 
-    # Lag features (only past values, no future leakage)
+    # Lag features
     for lag in [1, 7, 14]:
         df[f'{target_variable}_lag_{lag}'] = df[target_variable].shift(lag)
 
-    # Rolling window features (also only use past data)
+    # Rolling window features
     for window in [7, 14]:
         df[f'{target_variable}_rolling_mean_{window}'] = df[target_variable].rolling(window=window).mean()
         df[f'{target_variable}_rolling_std_{window}'] = df[target_variable].rolling(window=window).std()
@@ -70,18 +57,6 @@ def create_features(df, target_variable):
 def calculate_metrics(y_true, y_pred):
     """
     Calculate multiple regression metrics.
-
-    Parameters
-    ----------
-    y_true : array-like
-        True target values.
-    y_pred : array-like
-        Predicted target values.
-
-    Returns
-    -------
-    dict
-        Dictionary with MAE, RMSE, R², and MAPE.
     """
     mae = mean_absolute_error(y_true, y_pred)
     rmse = np.sqrt(mean_squared_error(y_true, y_pred))
@@ -105,22 +80,6 @@ def calculate_metrics(y_true, y_pred):
 def train_and_evaluate(model, X, y, n_splits=5):
     """
     Train a model using Time Series Cross-Validation and return metrics.
-
-    Parameters
-    ----------
-    model : sklearn estimator
-        The model to train.
-    X : pd.DataFrame
-        Feature matrix.
-    y : pd.Series
-        Target vector.
-    n_splits : int
-        Number of splits for time series cross-validation.
-
-    Returns
-    -------
-    dict
-        Dictionary with average MAE, RMSE, residual standard deviation, and also per-fold details.
     """
     if len(X) < n_splits + 1:
         raise ValueError("Not enough samples for the given number of splits in TimeSeriesSplit.")
@@ -212,22 +171,17 @@ def main():
         logger.warning("Duplicate dates found. Keeping first occurrence.")
         df = df.drop_duplicates(subset=["date"], keep="first").reset_index(drop=True)
 
-    # Use forward fill for missing values, then drop any rows that still have NaNs
-    # This prevents data leakage from the future (bfill)
     df = df.ffill().dropna(subset=[target] + user_features).reset_index(drop=True)
     logger.info(f"Data shape after cleaning: {df.shape}")
 
     engineered_df = create_features(df.copy(), target)
     
-    # Define feature sets
     engineered_feature_names = [col for col in engineered_df.columns if col.startswith(f'{target}_lag_') or col.startswith(f'{target}_rolling_')]
     date_feature_names = ['dayofweek', 'month', 'year', 'dayofyear', 'weekofyear', 'is_weekend', 'is_holiday']
     
-    # Combine and ensure no duplicates and target is not in features
     final_features = sorted(list(set(user_features + engineered_feature_names + date_feature_names)))
     final_features = [f for f in final_features if f in engineered_df.columns and f != target]
 
-    # Drop rows with NaNs created by feature engineering (lags/rolling)
     final_df = engineered_df.dropna().reset_index(drop=True)
     
     if final_df.empty:
@@ -289,7 +243,6 @@ def main():
     joblib.dump(best_model, model_path)
     logger.info(f"Model saved to {model_path}")
 
-    # --- Iterative Future Forecast ---
     margin_of_error = 1.96 * best_metrics["residual_std"]
     history_df = final_df.copy()
     future_predictions = []
@@ -319,14 +272,11 @@ def main():
 
         for feat in user_features:
             if feat in new_row_dict:
-                # Naive assumption: carry forward the last known value for user-provided features
                 new_row_dict[feat] = history_df[feat].iloc[-1]
 
         new_row = pd.DataFrame([new_row_dict])
         history_df = pd.concat([history_df, new_row], ignore_index=True)
 
-
-    # --- Construct Chart Data ---
     forecast_data = []
     for i in range(len(final_df)):
         forecast_data.append({
@@ -344,7 +294,6 @@ def main():
             "bounds": [float(future_predictions[i] - margin_of_error), float(future_predictions[i] + margin_of_error)]
         })
 
-    # --- Assemble result JSON ---
     result = {
         "metrics": {
             "mae": float(best_metrics["mae"]),
@@ -394,5 +343,3 @@ if __name__ == "__main__":
             "traceback": tb
         }))
         sys.exit(1)
-
-    

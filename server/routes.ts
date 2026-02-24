@@ -37,16 +37,16 @@ async function runForecastModel(inputData: any): Promise<any> {
       }
 
       if (code !== 0) {
-        // Try to parse stderrData or stdoutData for a JSON error from the script
+        // Try to parse stdout for a JSON error first, as our robust script sends errors there
         try {
-          const errorResult = JSON.parse(stdoutData || stderrData);
-          if (errorResult.error) {
-            return reject(new Error(`Forecast script error: ${errorResult.error}\nTraceback: ${errorResult.traceback}`));
-          }
+            const errorResult = JSON.parse(stdoutData);
+            if (errorResult.error) {
+                return reject(new Error(`Forecast script error: ${errorResult.error}\nTraceback: ${errorResult.traceback}`));
+            }
         } catch (e) {
-          // Fallback if parsing fails
+            // Fallback if stdout is not a valid JSON error
         }
-        reject(new Error(`Python script failed with code ${code}. STDERR: ${stderrData}`));
+        reject(new Error(`Python script failed with code ${code}. STDERR: ${stderrData || 'N/A'}. STDOUT: ${stdoutData || 'N/A'}`));
       } else {
         try {
           const result = JSON.parse(stdoutData);
@@ -58,7 +58,7 @@ async function runForecastModel(inputData: any): Promise<any> {
           resolve(result);
         } catch (e) {
           console.error('[runForecastModel] Failed to parse JSON from Python script stdout.');
-          reject(new Error(`Failed to parse Python script output. Check STDOUT in logs.`));
+          reject(new Error(`Failed to parse Python script output. Raw STDOUT: ${stdoutData}`));
         }
       }
     });
@@ -73,12 +73,12 @@ async function runForecastModel(inputData: any): Promise<any> {
 export function registerRoutes(): express.Router {
   const router = express.Router();
 
-  router.get(api.datasets.list.path.replace('/api', ''), async (req, res) => {
+  router.get(api.datasets.list.path, async (req, res) => {
     const items = await storage.getDatasets();
     res.json(items);
   });
 
-  router.get(api.datasets.get.path.replace('/api', ''), async (req, res) => {
+  router.get(api.datasets.get.path, async (req, res) => {
     const item = await storage.getDataset(Number(req.params.id));
     if (!item) {
       return res.status(404).json({ message: 'Dataset not found' });
@@ -86,7 +86,7 @@ export function registerRoutes(): express.Router {
     res.json(item);
   });
 
-  router.post(api.datasets.create.path.replace('/api', ''), async (req, res, next) => {
+  router.post(api.datasets.create.path, async (req, res, next) => {
     try {
       const input = api.datasets.create.input.parse(req.body);
       const dataString = JSON.stringify(input.data);
@@ -102,12 +102,12 @@ export function registerRoutes(): express.Router {
     }
   });
 
-  router.get(api.models.list.path.replace('/api', ''), async (req, res) => {
+  router.get(api.models.list.path, async (req, res) => {
     const items = await storage.getModels();
     res.json(items);
   });
 
-  router.get(api.models.get.path.replace('/api', ''), async (req, res) => {
+  router.get(api.models.get.path, async (req, res) => {
     const item = await storage.getModel(Number(req.params.id));
     if (!item) {
       return res.status(404).json({ message: 'Model not found' });
@@ -115,8 +115,8 @@ export function registerRoutes(): express.Router {
     res.json(item);
   });
 
-  router.post(api.models.train.path.replace('/api', ''), async (req, res, next) => {
-    const reqPath = `[API] POST ${req.path}`;
+  router.post(api.models.train.path, async (req, res, next) => {
+    const reqPath = `[API] POST ${api.models.train.path}`;
     try {
       console.log(`${reqPath} - Request received.`);
       const input = api.models.train.input.parse(req.body);
@@ -172,5 +172,3 @@ export function registerRoutes(): express.Router {
 
   return router;
 }
-
-    
