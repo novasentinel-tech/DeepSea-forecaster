@@ -8,10 +8,13 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { Loader2, BrainCircuit, Sparkles, AlertCircle, CheckCircle, FileCheck, Bullseye, SlidersHorizontal } from "lucide-react";
+import { Loader2, BrainCircuit, Sparkles, AlertCircle, CheckCircle, SlidersHorizontal, Calendar as CalendarIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Switch } from "@/components/ui/switch";
 import { addDays, format, parseISO } from "date-fns";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
+
 
 export default function NewForecast() {
   const [, setLocation] = useLocation();
@@ -24,6 +27,7 @@ export default function NewForecast() {
   const [target, setTarget] = useState<string>("");
   const [features, setFeatures] = useState<string[]>([]);
   const [horizon, setHorizon] = useState<string>("30");
+  const [forecastStartDate, setForecastStartDate] = useState<Date>();
 
   const [isAdvancedMode, setIsAdvancedMode] = useState(false);
   const [hyperparameters, setHyperparameters] = useState({
@@ -48,17 +52,22 @@ export default function NewForecast() {
     };
   }, [selectedDataset]);
 
+  useEffect(() => {
+    if (datasetSummary) {
+      setForecastStartDate(addDays(datasetSummary.lastDate, 1));
+    }
+  }, [datasetSummary]);
+
   const availableColumns = useMemo(() => {
     if (!selectedDataset || !Array.isArray(selectedDataset.data) || selectedDataset.data.length === 0) return [];
     return Object.keys(selectedDataset.data[0]).filter(k => k.toLowerCase() !== 'date' && k.toLowerCase() !== 'timestamp');
   }, [selectedDataset]);
 
   const forecastHorizonPreview = useMemo(() => {
-    if (!datasetSummary || !horizon) return null;
-    const startDate = format(addDays(datasetSummary.lastDate, 1), 'dd/MM/yyyy');
-    const endDate = format(addDays(datasetSummary.lastDate, parseInt(horizon)), 'dd/MM/yyyy');
-    return `${startDate} até ${endDate}`;
-  }, [datasetSummary, horizon]);
+    if (!forecastStartDate || !horizon) return null;
+    const endDate = format(addDays(forecastStartDate, parseInt(horizon) - 1), 'dd/MM/yyyy');
+    return `${format(forecastStartDate, 'dd/MM/yyyy')} até ${endDate}`;
+  }, [forecastStartDate, horizon]);
 
   // Auto-select features when target changes
   useEffect(() => {
@@ -91,6 +100,7 @@ export default function NewForecast() {
         targetVariable: target,
         features: features,
         horizon: parseInt(horizon),
+        forecastStartDate: forecastStartDate ? forecastStartDate.toISOString().split('T')[0] : undefined,
       };
 
       if (isAdvancedMode && algorithm === 'random_forest') {
@@ -209,8 +219,8 @@ export default function NewForecast() {
                     <h3 className="text-lg font-medium">Configuração do Modelo</h3>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-3">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="space-y-3 md:col-span-1">
                       <Label>Algoritmo</Label>
                       <Select value={algorithm} onValueChange={(v: any) => setAlgorithm(v)}>
                         <SelectTrigger className="bg-background/50">
@@ -225,7 +235,34 @@ export default function NewForecast() {
                     </div>
 
                     <div className="space-y-3">
-                      <Label>Horizonte de Previsão (Passos)</Label>
+                      <Label>Data de Início da Previsão</Label>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant={"outline"}
+                              className={cn(
+                                "w-full justify-start text-left font-normal bg-background/50",
+                                !forecastStartDate && "text-muted-foreground"
+                              )}
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {forecastStartDate ? format(forecastStartDate, "dd/MM/yyyy") : <span>Escolha uma data</span>}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0">
+                            <Calendar
+                              mode="single"
+                              selected={forecastStartDate}
+                              onSelect={setForecastStartDate}
+                              initialFocus
+                              disabled={(date) => datasetSummary ? date <= datasetSummary.lastDate : false}
+                            />
+                          </PopoverContent>
+                        </Popover>
+                    </div>
+
+                    <div className="space-y-3">
+                      <Label>Horizonte (Passos)</Label>
                       <Input 
                         type="number" 
                         min="1" 
@@ -234,9 +271,13 @@ export default function NewForecast() {
                         onChange={(e) => setHorizon(e.target.value)}
                         className="bg-background/50"
                       />
-                      {forecastHorizonPreview && <p className="text-xs text-muted-foreground">Prevendo de: {forecastHorizonPreview}</p>}
                     </div>
                   </div>
+                  {forecastHorizonPreview && (
+                    <Button variant="outline" className="text-xs text-muted-foreground mt-2 p-2 h-auto font-normal justify-start w-full bg-background/30 cursor-default hover:bg-background/30">
+                      <span className="font-semibold mr-1">Período da previsão:</span> {forecastHorizonPreview}
+                    </Button>
+                  )}
 
                   {algorithm === 'random_forest' &&
                     <div className="space-y-4 pt-4">
