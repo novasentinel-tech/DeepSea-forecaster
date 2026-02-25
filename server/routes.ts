@@ -1,174 +1,99 @@
-import type { Express } from "express";
+import express from "express";
 import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
-import { spawn } from "child_process";
-import path from "path";
-import crypto from "crypto";
-import express from "express";
 
-// Helper to run python script
-async function runForecastModel(inputData: any): Promise<any> {
-  return new Promise((resolve, reject) => {
-    const scriptPath = path.join(process.cwd(), 'server', 'forecast.py');
-    console.log(`[runForecastModel] Spawning Python script: ${scriptPath}`);
-    const pythonProcess = spawn('.venv/bin/python', [scriptPath]);
-    
-    let stdoutData = '';
-    let stderrData = '';
-    
-    pythonProcess.stdout.on('data', (data) => {
-      stdoutData += data.toString();
-    });
-    
-    pythonProcess.stderr.on('data', (data) => {
-      stderrData += data.toString();
-    });
-    
-    pythonProcess.on('close', (code) => {
-      console.log(`[runForecastModel] Python script finished with code ${code}.`);
-      if (stderrData) {
-        console.error(`[runForecastModel] STDERR: ${stderrData}`);
-      }
-      if (stdoutData) {
-        // Log stdout but be careful not to log huge datasets
-        const preview = stdoutData.length > 500 ? stdoutData.substring(0, 500) + '...' : stdoutData;
-        console.log(`[runForecastModel] STDOUT: ${preview}`);
-      }
-
-      if (code !== 0) {
-        // Try to parse stdout for a JSON error first, as our robust script sends errors there
-        try {
-            const errorResult = JSON.parse(stdoutData);
-            if (errorResult.error) {
-                return reject(new Error(`Forecast script error: ${errorResult.error}\nTraceback: ${errorResult.traceback}`));
-            }
-        } catch (e) {
-            // Fallback if stdout is not a valid JSON error
-        }
-        reject(new Error(`Python script failed with code ${code}. STDERR: ${stderrData || 'N/A'}. STDOUT: ${stdoutData || 'N/A'}`));
-      } else {
-        try {
-          const result = JSON.parse(stdoutData);
-          if (result.error) {
-            console.error('[runForecastModel] Python script returned a structured error.');
-            return reject(new Error(`Forecast script error: ${result.error}\nTraceback: ${result.traceback}`));
-          }
-          console.log('[runForecastModel] Python script successful. Parsed JSON result.');
-          resolve(result);
-        } catch (e) {
-          console.error('[runForecastModel] Failed to parse JSON from Python script stdout.');
-          reject(new Error(`Failed to parse Python script output. Raw STDOUT: ${stdoutData}`));
-        }
-      }
-    });
-    
-    console.log('[runForecastModel] Writing input to stdin.');
-    pythonProcess.stdin.write(JSON.stringify(inputData));
-    pythonProcess.stdin.end();
-  });
-}
-
-
-export function registerRoutes(): express.Router {
+export function registerRoutes() {
   const router = express.Router();
 
-  router.get(api.datasets.list.path, async (req, res) => {
-    const items = await storage.getDatasets();
-    res.json(items);
+  // Get all KPIs with their data
+  router.get(api.kpis.list.path, async (req, res) => {
+    const kpis = await storage.getKpis();
+    res.json(kpis);
   });
 
-  router.get(api.datasets.get.path, async (req, res) => {
-    const item = await storage.getDataset(Number(req.params.id));
-    if (!item) {
-      return res.status(404).json({ message: 'Dataset not found' });
+  // Get a single KPI by ID
+  router.get(api.kpis.get.path, async (req, res) => {
+    const id = parseInt(req.params.id, 10);
+    if (isNaN(id)) {
+      return res.status(400).json({ message: "Invalid ID format" });
     }
-    res.json(item);
+    const kpi = await storage.getKpiWithData(id);
+    if (!kpi) {
+      return res.status(404).json({ message: "KPI not found" });
+    }
+    res.json(kpi);
   });
 
-  router.post(api.datasets.create.path, async (req, res, next) => {
+  // Create a new KPI
+  router.post(api.kpis.create.path, async (req, res, next) => {
     try {
-      const input = api.datasets.create.input.parse(req.body);
-      const dataString = JSON.stringify(input.data);
-      const fileHash = crypto.createHash('sha256').update(dataString).digest('hex');
-
-      const item = await storage.createDataset({ ...input, fileHash });
-      res.status(201).json(item);
-    } catch (err) {
-       if (err instanceof z.ZodError) {
-        return res.status(400).json({ message: err.errors[0].message, field: err.errors[0].path.join('.') });
-      }
-      next(err);
+      const kpiData = api.kpis.create.input.parse(req.body);
+      const newKpi = await storage.createKpi(kpiData);
+      res.status(201).json(newKpi);
+    } catch (error) {
+        if (error instanceof z.ZodError) {
+          return res.status(400).json({ message: error.errors[0].message });
+        }
+        next(error);
     }
   });
 
-  router.get(api.models.list.path, async (req, res) => {
-    const items = await storage.getModels();
-    res.json(items);
-  });
-
-  router.get(api.models.get.path, async (req, res) => {
-    const item = await storage.getModel(Number(req.params.id));
-    if (!item) {
-      return res.status(404).json({ message: 'Model not found' });
-    }
-    res.json(item);
-  });
-
-  router.post(api.models.train.path, async (req, res, next) => {
-    const reqPath = `[API] POST ${api.models.train.path}`;
+  // Add a new data point
+  router.post(api.dataPoints.create.path, async (req, res, next) => {
     try {
-      console.log(`${reqPath} - Request received.`);
-      const input = api.models.train.input.parse(req.body);
-      
-      console.log(`${reqPath} - Fetching dataset: ${input.datasetId}`);
-      const dataset = await storage.getDataset(input.datasetId);
-      if (!dataset) {
-        console.error(`${reqPath} - Dataset not found: ${input.datasetId}`);
-        return res.status(404).json({ message: 'Dataset not found' });
-      }
-
-      if (!Array.isArray(dataset.data)) {
-        console.error(`${reqPath} - Dataset data is not an array.`);
-        return res.status(400).json({ message: 'Dataset data is not in the expected array format.' });
-      }
-
-      console.log(`${reqPath} - Calling Python script...`);
-      const result = await runForecastModel({
-        data: dataset.data,
-        targetVariable: input.targetVariable,
-        features: input.features,
-        algorithm: input.algorithm,
-        hyperparameters: input.hyperparameters || {},
-        horizon: input.horizon,
-        forecastStartDate: input.forecastStartDate,
-      });
-      console.log(`${reqPath} - Python script succeeded.`);
-
-      const model = await storage.createModel({
-        datasetId: input.datasetId,
-        algorithm: result.trainingConfig.modelUsed,
-        targetVariable: input.targetVariable,
-        features: result.featuresUsed,
-        horizon: input.horizon,
-        hyperparameters: result.trainingConfig.hyperparameters,
-        modelPath: result.modelPath,
-        trainingDuration: result.trainingDuration,
-        forecastData: result.forecastData,
-        metrics: result.metrics,
-        featureImportance: result.featureImportance,
-        trainingConfig: result.trainingConfig,
-        datasetVersion: 1, // Placeholder
-      });
-
-      console.log(`${reqPath} - Model created in DB. Sending 201 response.`);
-      res.status(201).json(model);
-    } catch (err) {
-      console.error(`${reqPath} - ERROR:`, err);
-      // Pass the error to the Express error handler
-      next(err);
+      const dataPointData = api.dataPoints.create.input.parse(req.body);
+      const newDataPoint = await storage.createDataPoint(dataPointData);
+      res.status(201).json(newDataPoint);
+    } catch (error) {
+        if (error instanceof z.ZodError) {
+          return res.status(400).json({ message: error.errors[0].message });
+        }
+        next(error);
     }
   });
+  
+  seedDatabase().catch(console.error);
 
   return router;
+}
+
+// Seed the database with some example data if it's empty
+async function seedDatabase() {
+  const kpis = await storage.getKpis();
+  if (kpis.length === 0) {
+    console.log("Seeding database with example KPIs...");
+    const mrr = await storage.createKpi({ name: "Monthly Recurring Revenue", category: "Financial", format: "currency", description: "The predictable recurring revenue a company can expect to receive every month." });
+    const dau = await storage.createKpi({ name: "Daily Active Users", category: "Engagement", format: "number", description: "The number of unique users who engage with the product in a day." });
+    const churn = await storage.createKpi({ name: "Customer Churn Rate", category: "Sales", format: "percentage", description: "The rate at which customers stop doing business with a company." });
+    
+    // Seed MRR data
+    let currentMrr = 42000;
+    for (let i = 90; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        currentMrr += (Math.random() - 0.4) * 500;
+        await storage.createDataPoint({ kpiId: mrr.id, value: currentMrr.toFixed(2), date });
+    }
+    
+    // Seed DAU data
+    let currentDau = 1200;
+     for (let i = 90; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        currentDau += (Math.random() - 0.5) * 50 + (date.getDay() >= 5 ? 100 : -50);
+        await storage.createDataPoint({ kpiId: dau.id, value: Math.round(currentDau).toString(), date });
+    }
+    
+    // Seed Churn data
+    let currentChurn = 5.5;
+     for (let i = 90; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        currentChurn += (Math.random() - 0.5) * 0.2;
+        if(currentChurn < 1) currentChurn = 1.1;
+        await storage.createDataPoint({ kpiId: churn.id, value: currentChurn.toFixed(2), date });
+    }
+    console.log("Database seeded.");
+  }
 }

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Outfit:wght@100..900&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,125 +6,132 @@
 
 @layer base {
   :root {
-    --font-sans: 'Plus Jakarta Sans', sans-serif;
-    --font-mono: 'JetBrains Mono', monospace;
+    --font-sans: 'DM Sans', sans-serif;
+    --font-display: 'Outfit', sans-serif;
 
     --background: 0 0% 100%;
-    --foreground: 222.2 47.4% 11.2%;
-
+    --foreground: 240 10% 3.9%;
     --card: 0 0% 100%;
-    --card-foreground: 222.2 47.4% 11.2%;
- 
+    --card-foreground: 240 10% 3.9%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 47.4% 11.2%;
- 
-    --primary: 260 100% 60%;
+    --popover-foreground: 240 10% 3.9%;
+    --primary: 221.2 83.2% 53.3%;
     --primary-foreground: 210 40% 98%;
- 
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
- 
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
- 
-    --accent: 330 95% 55%;
-    --accent-foreground: 210 40% 98%;
- 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
- 
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 260 100% 60%;
- 
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+    --destructive: 348.2 83.2% 47.3%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 221.2 83.2% 53.3%;
+    
     --radius: 0.75rem;
 
-    /* Sidebar specifics for light theme */
+    /* Sidebar Variables */
     --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 222.2 47.4% 11.2%;
-    --sidebar-primary: 260 100% 60%;
-    --sidebar-primary-foreground: 210 40% 98%;
-    --sidebar-accent: 0 0% 94%;
-    --sidebar-accent-foreground: 222.2 47.4% 11.2%;
-    --sidebar-border: 0 0% 90%;
-    --sidebar-ring: 260 100% 60%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Chart Colors - Clean and modern palette */
+    --chart-1: 221.2 83.2% 53.3%; /* Blue */
+    --chart-2: 280 65% 60%; /* Purple */
+    --chart-3: 142.1 76.2% 36.3%; /* Green */
+    --chart-4: 348 83% 47%; /* Red */
+    --chart-5: 32 95% 44%; /* Orange */
+
+    /* Trend Colors */
+    --trend-up: 142.1 76.2% 36.3%;
+    --trend-down: 348.2 83.2% 47.3%;
+
+    /* Custom elevations for interactive elements */
+    --elevate-1: rgba(0,0,0, 0.03);
+    --elevate-2: rgba(0,0,0, 0.08);
   }
- 
+
   .dark {
-    --background: 224 35% 8%;
-    --foreground: 210 40% 98%;
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 217.2 91.2% 59.8%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 342.8 72.2% 50.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 224.3 76.3% 48%;
 
-    --card: 222 30% 11%;
-    --card-foreground: 210 40% 98%;
-    
-    --popover: 222 30% 11%;
-    --popover-foreground: 210 40% 98%;
+    /* Sidebar Variables Dark */
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
 
-    --primary: 260 100% 70%;
-    --primary-foreground: 210 40% 98%;
+    --chart-1: 217.2 91.2% 59.8%;
+    --chart-2: 280 65% 60%;
+    --chart-3: 142.1 76.2% 36.3%;
+    --chart-4: 348 83% 47%;
+    --chart-5: 32 95% 44%;
 
-    --secondary: 217 24% 20%;
-    --secondary-foreground: 210 40% 98%;
+    --trend-up: 142.1 70% 45%;
+    --trend-down: 348.2 80% 55%;
 
-    --muted: 217 24% 16%;
-    --muted-foreground: 215 20% 65%;
-
-    --accent: 330 100% 65%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217 24% 20%;
-    --input: 217 24% 20%;
-    --ring: 260 100% 70%;
-
-    /* Sidebar specifics for dark theme */
-    --sidebar-background: 224 35% 8%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 260 100% 70%;
-    --sidebar-primary-foreground: 210 40% 98%;
-    --sidebar-accent: 217 24% 16%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 217 24% 20%;
-    --sidebar-ring: 260 100% 70%;
-  }
-
-  body {
-    @apply bg-background text-foreground antialiased selection:bg-primary/30;
-    font-family: var(--font-sans);
-    background-image: 
-      radial-gradient(circle at 15% 50%, hsla(var(--primary), 0.08), transparent 25%),
-      radial-gradient(circle at 85% 30%, hsla(var(--accent), 0.05), transparent 25%);
-    background-attachment: fixed;
-  }
-
-  h1, h2, h3, h4, h5, h6 {
-    @apply font-bold tracking-tight text-foreground;
+    --elevate-1: rgba(255,255,255, 0.04);
+    --elevate-2: rgba(255,255,255, 0.09);
   }
 }
 
-@layer utilities {
-  .glass-card {
-    @apply bg-card/60 backdrop-blur-xl border border-white/5 shadow-2xl;
+@layer base {
+  * {
+    @apply border-border;
   }
-  
-  .text-gradient {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-violet-400 via-purple-400 to-fuchsia-400;
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-sans);
   }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-display);
+    @apply tracking-tight font-semibold;
+  }
+}
 
-  /* Custom Scrollbar for dark theme */
-  ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+/* Utilities for hover elevation as per guidelines */
+@layer utilities {
+  .hover-elevate {
+    @apply relative z-0 transition-transform duration-200;
   }
-  ::-webkit-scrollbar-track {
-    background: transparent;
+  .hover-elevate::after {
+    content: "";
+    @apply absolute inset-0 rounded-inherit pointer-events-none z-50 transition-colors duration-200;
   }
-  ::-webkit-scrollbar-thumb {
-    @apply bg-secondary rounded-full;
+  .hover-elevate:hover::after {
+    background-color: var(--elevate-1);
   }
-  ::-webkit-scrollbar-thumb:hover {
-    @apply bg-muted-foreground;
+  .hover-elevate:active::after {
+    background-color: var(--elevate-2);
+  }
+  .rounded-inherit {
+    border-radius: inherit;
   }
 }

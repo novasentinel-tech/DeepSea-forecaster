@@ -1,78 +1,33 @@
 import { z } from 'zod';
-import { insertDatasetSchema, datasets, models } from './schema';
-
-export const errorSchemas = {
-  validation: z.object({ message: z.string(), field: z.string().optional() }),
-  notFound: z.object({ message: z.string() }),
-  internal: z.object({ message: z.string() }),
-};
+import { CreateKpiRequest, CreateKpiDataPointRequest } from './schema';
 
 export const api = {
-  datasets: {
+  kpis: {
     list: {
       method: 'GET' as const,
-      path: '/api/datasets' as const,
-      responses: {
-        200: z.array(z.custom<typeof datasets.$inferSelect>()),
-      },
+      path: '/api/kpis' as const,
+      responses: { 200: z.array(z.any()) }, // z.any() to represent KpiWithData[]
     },
     get: {
       method: 'GET' as const,
-      path: '/api/datasets/:id' as const,
-      responses: {
-        200: z.custom<typeof datasets.$inferSelect>(),
-        404: errorSchemas.notFound,
-      },
+      path: '/api/kpis/:id' as const,
+      responses: { 200: z.any() }, // z.any() to represent KpiWithData
     },
     create: {
       method: 'POST' as const,
-      path: '/api/datasets' as const,
-      input: insertDatasetSchema.omit({ fileHash: true }),
-      responses: {
-        201: z.custom<typeof datasets.$inferSelect>(),
-        400: errorSchemas.validation,
-      },
+      path: '/api/kpis' as const,
+      input: CreateKpiRequest,
+      responses: { 201: z.any() },
     },
   },
-  models: {
-    list: {
-      method: 'GET' as const,
-      path: '/api/models' as const,
-      responses: {
-        200: z.array(z.custom<typeof models.$inferSelect>()),
-      },
-    },
-    get: {
-      method: 'GET' as const,
-      path: '/api/models/:id' as const,
-      responses: {
-        200: z.custom<typeof models.$inferSelect>(),
-        404: errorSchemas.notFound,
-      },
-    },
-    train: {
-      method: 'POST' as const,
-      path: '/api/models/train' as const,
-      input: z.object({
-        datasetId: z.number(),
-        algorithm: z.enum(['linear_regression', 'random_forest', 'auto']),
-        targetVariable: z.string(),
-        features: z.array(z.string()),
-        horizon: z.number().min(1).max(365),
-        forecastStartDate: z.string().optional(),
-        hyperparameters: z.object({
-          n_estimators: z.number().optional(),
-          max_depth: z.number().optional(),
-        }).optional(),
-      }),
-      responses: {
-        201: z.custom<typeof models.$inferSelect>(),
-        400: errorSchemas.validation,
-        404: errorSchemas.notFound,
-        500: errorSchemas.internal,
-      },
-    },
-  },
+  dataPoints: {
+    create: {
+        method: 'POST' as const,
+        path: '/api/data-points' as const,
+        input: CreateKpiDataPointRequest,
+        responses: { 201: z.any() },
+    }
+  }
 };
 
 export function buildUrl(path: string, params?: Record<string, string | number>): string {

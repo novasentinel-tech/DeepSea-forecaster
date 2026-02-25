@@ -1,157 +1,109 @@
-import { useDatasets } from "@/hooks/use-datasets";
-import { useModels } from "@/hooks/use-forecasts";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Link } from "wouter";
-import { Activity, Database, TrendingUp, Plus, ArrowRight, LineChart } from "lucide-react";
+import { useKpis } from "@/hooks/use-kpis";
+import { KpiCard } from "@/components/kpi-card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ForecastChart } from "@/components/charts/forecast-chart";
+import { Link } from "wouter";
+import { Button } from "@/components/ui/button";
+import { PlusCircle, BarChart3 } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { CreateKpiForm } from "@/components/forms/create-kpi-form";
+import { useState } from "react";
+import type { KpiWithData } from "@shared/schema";
 
 export default function Dashboard() {
-  const { data: datasets, isLoading: loadingDatasets } = useDatasets();
-  const { data: models, isLoading: loadingModels } = useModels();
+  const { data: kpis, isLoading, error } = useKpis();
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
 
-  const latestModel = models?.[models.length - 1];
+  // Group KPIs by category
+  const groupedKpis = kpis?.reduce((acc, kpi) => {
+    const category = kpi.kpi.category;
+    if (!acc[category]) acc[category] = [];
+    acc[category].push(kpi);
+    return acc;
+  }, {} as Record<string, KpiWithData[]>) || {};
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[50vh]">
+        <div className="text-destructive font-semibold mb-2">Error loading dashboard</div>
+        <p className="text-muted-foreground">{error.message}</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div>
-        <h1 className="text-4xl tracking-tight text-gradient mb-2">Visão Geral do Sistema</h1>
-        <p className="text-muted-foreground text-lg">Monitore seus modelos de séries temporais multivariadas e conjuntos de dados.</p>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="glass-card border-l-4 border-l-primary/50">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total de Conjuntos de Dados</CardTitle>
-            <Database className="h-4 w-4 text-primary" />
-          </CardHeader>
-          <CardContent>
-            {loadingDatasets ? (
-              <Skeleton className="h-8 w-16" />
-            ) : (
-              <div className="text-3xl font-bold font-mono">{datasets?.length || 0}</div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="glass-card border-l-4 border-l-accent/50">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Modelos Gerados</CardTitle>
-            <Activity className="h-4 w-4 text-accent" />
-          </CardHeader>
-          <CardContent>
-            {loadingModels ? (
-              <Skeleton className="h-8 w-16" />
-            ) : (
-              <div className="text-3xl font-bold font-mono">{models?.length || 0}</div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="glass-card border-l-4 border-l-green-500/50 bg-gradient-to-br from-card to-card/50">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Status do Sistema</CardTitle>
-            <TrendingUp className="h-4 w-4 text-green-400" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-green-400">Online</div>
-            <p className="text-xs text-muted-foreground mt-1">Pronto para predição</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <Card className="glass-card lg:col-span-2 flex flex-col">
-          <CardHeader className="flex flex-row items-start justify-between">
-            <div>
-              <CardTitle>Último Experimento</CardTitle>
-              <CardDescription>
-                {latestModel 
-                  ? `Prevendo ${latestModel.targetVariable} usando ${latestModel.algorithm.replace('_', ' ')}`
-                  : "Nenhum modelo treinado ainda."}
-              </CardDescription>
-            </div>
-            {latestModel && (
-              <Button variant="outline" size="sm" asChild className="hover-elevate">
-                <Link href={`/forecasts/${latestModel.id}`}>
-                  Ver Detalhes <ArrowRight className="ml-2 w-4 h-4" />
-                </Link>
-              </Button>
-            )}
-          </CardHeader>
-          <CardContent className="flex-1 min-h-[300px]">
-            {loadingModels ? (
-              <Skeleton className="w-full h-full rounded-xl" />
-            ) : latestModel ? (
-              <ForecastChart 
-                data={latestModel.forecastData as any[]} 
-                targetVariable={latestModel.targetVariable}
-                height={350} 
-              />
-            ) : (
-              <div className="flex flex-col items-center justify-center h-full text-center p-8 rounded-xl border border-dashed border-border/50 bg-secondary/10">
-                <LineChart className="w-12 h-12 text-muted-foreground mb-4 opacity-50" />
-                <h3 className="text-lg font-medium text-foreground mb-2">Sem dados para exibir</h3>
-                <p className="text-muted-foreground max-w-sm mb-4">Execute seu primeiro experimento para ver os resultados aqui.</p>
-                <Button asChild className="hover-elevate">
-                  <Link href="/forecasts/new">Gerar Previsão</Link>
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <div className="space-y-8">
-          <Card className="glass-card">
-            <CardHeader>
-              <CardTitle>Ações Rápidas</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Button asChild className="w-full justify-start hover-elevate shadow-lg shadow-primary/20 bg-gradient-to-r from-primary to-primary/80">
-                <Link href="/forecasts/new">
-                  <Plus className="mr-2 h-4 w-4" /> Novo Experimento
-                </Link>
-              </Button>
-              <Button asChild variant="outline" className="w-full justify-start hover-elevate">
-                <Link href="/datasets">
-                  <Database className="mr-2 h-4 w-4 text-accent" /> Upload de Dados
-                </Link>
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card className="glass-card border-border/40">
-            <CardHeader>
-              <CardTitle className="text-lg">Conjuntos de Dados Recentes</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {loadingDatasets ? (
-                <div className="space-y-3">
-                  <Skeleton className="h-10 w-full" />
-                  <Skeleton className="h-10 w-full" />
-                </div>
-              ) : datasets && datasets.length > 0 ? (
-                <div className="space-y-3">
-                  {datasets.slice(0, 4).map(ds => (
-                    <div key={ds.id} className="flex items-center justify-between p-3 rounded-lg bg-secondary/30 border border-border/50 hover:bg-secondary/50 transition-colors">
-                      <div className="flex flex-col truncate">
-                        <span className="font-medium truncate text-sm">{ds.name}</span>
-                        <span className="text-xs text-muted-foreground uppercase tracking-wider">{ds.type}</span>
-                      </div>
-                      <div className="text-xs font-mono text-muted-foreground px-2 py-1 bg-background rounded-md">
-                        {Array.isArray(ds.data) ? ds.data.length : 0} linhas
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground text-center py-4">Nenhum conjunto de dados disponível.</p>
-              )}
-            </CardContent>
-          </Card>
+    <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in duration-500">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-3xl md:text-4xl font-display font-bold tracking-tight text-foreground">
+            Executive Summary
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            Monitor your business performance across key categories.
+          </p>
         </div>
+        
+        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+          <DialogTrigger asChild>
+            <Button className="hover-elevate shadow-sm">
+              <PlusCircle className="mr-2 h-4 w-4" />
+              New Metric
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle className="font-display text-xl">Create New KPI</DialogTitle>
+              <DialogDescription>
+                Define a new metric to track on your dashboard.
+              </DialogDescription>
+            </DialogHeader>
+            <CreateKpiForm onSuccess={() => setIsCreateOpen(false)} />
+          </DialogContent>
+        </Dialog>
       </div>
+
+      {isLoading ? (
+        <div className="space-y-8">
+          {[1, 2].map(section => (
+            <div key={section} className="space-y-4">
+              <Skeleton className="h-6 w-32" />
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[1, 2, 3].map(i => <Skeleton key={i} className="h-32 rounded-xl" />)}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : kpis?.length === 0 ? (
+        <div className="flex flex-col items-center justify-center h-[40vh] border-2 border-dashed border-border rounded-2xl bg-muted/20">
+          <div className="bg-background p-4 rounded-full shadow-sm mb-4">
+            <BarChart3 className="h-8 w-8 text-muted-foreground" />
+          </div>
+          <h3 className="font-display font-semibold text-lg">No metrics yet</h3>
+          <p className="text-muted-foreground max-w-md text-center mb-6 mt-1">
+            Start tracking your business performance by creating your first Key Performance Indicator.
+          </p>
+          <Button onClick={() => setIsCreateOpen(true)} className="hover-elevate">
+            Create Your First KPI
+          </Button>
+        </div>
+      ) : (
+        <div className="space-y-10">
+          {Object.entries(groupedKpis).map(([category, categoryKpis]) => (
+            <div key={category} className="space-y-4">
+              <h2 className="text-xl font-display font-semibold text-foreground/90 flex items-center">
+                {category}
+                <div className="ml-4 flex-1 h-px bg-border/50"></div>
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
+                {categoryKpis.map((data) => (
+                  <Link key={data.kpi.id} href={`/kpis/${data.kpi.id}`}>
+                    <KpiCard data={data} />
+                  </Link>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

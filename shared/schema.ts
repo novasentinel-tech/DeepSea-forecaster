@@ -1,41 +1,43 @@
-import { pgTable, text, serial, integer, json, timestamp, real } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, numeric, timestamp, integer, varchar } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const datasets = pgTable("datasets", {
+export const kpis = pgTable("kpis", {
   id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  type: text("type").notNull(),
-  data: json("data").notNull(),
-  fileHash: text("file_hash").notNull(),
-  createdAt: timestamp("created_at").defaultNow(),
+  name: varchar("name", { length: 255 }).notNull(),
+  description: text("description"),
+  category: varchar("category", { length: 100 }).notNull(),
+  format: varchar("format", { length: 50 }).default("number").notNull(), // 'number', 'currency', 'percentage'
 });
 
-export const models = pgTable("models", {
+export const dataPoints = pgTable("data_points", {
   id: serial("id").primaryKey(),
-  datasetId: integer("dataset_id").notNull(),
-  datasetVersion: integer("dataset_version").default(1),
-  algorithm: text("algorithm").notNull(),
-  targetVariable: text("target_variable").notNull(),
-  features: json("features").notNull(), // Array of feature names
-  hyperparameters: json("hyperparameters"), // e.g., { "n_estimators": 100 }
-  trainingDuration: real("training_duration"), // in seconds
-  modelPath: text("model_path"), // Path to the serialized .pkl file
-  horizon: integer("horizon").notNull(),
-  forecastData: json("forecast_data").notNull(), // Stores the prediction made at training time
-  metrics: json("metrics").notNull(), // MAE, RMSE, etc.
-  featureImportance: json("feature_importance"), // For tree-based models
-  trainingConfig: json("training_config"), // Full config for reproducibility
-  status: text("status").default('completed'), // 'training', 'completed', 'failed'
-  createdAt: timestamp("created_at").defaultNow(),
+  kpiId: integer("kpi_id").references(() => kpis.id, { onDelete: "cascade" }).notNull(),
+  value: numeric("value").notNull(),
+  date: timestamp("date").notNull(),
 });
 
+export const insertKpiSchema = createInsertSchema(kpis, {
+  name: z.string().min(3, "Name must be at least 3 characters"),
+  category: z.string().min(1, "Category is required"),
+}).omit({ id: true });
 
-export const insertDatasetSchema = createInsertSchema(datasets).omit({ id: true, createdAt: true });
-export const insertModelSchema = createInsertSchema(models).omit({ id: true, createdAt: true });
+export const insertDataPointSchema = createInsertSchema(dataPoints).omit({ id: true });
 
-export type Dataset = typeof datasets.$inferSelect;
-export type InsertDataset = z.infer<typeof insertDatasetSchema>;
+export type Kpi = typeof kpis.$inferSelect;
+export type InsertKpi = z.infer<typeof insertKpiSchema>;
 
-export type Model = typeof models.$inferSelect;
-export type InsertModel = z.infer<typeof insertModelSchema>;
+export type DataPoint = typeof dataPoints.$inferSelect;
+export type InsertDataPoint = z.infer<typeof insertDataPointSchema>;
+
+// Custom type for API responses
+export type KpiWithData = {
+  kpi: Kpi;
+  dataPoints: DataPoint[];
+  currentValue: number | null;
+  previousValue: number | null;
+  percentageChange: number | null;
+};
+
+export const CreateKpiRequest = insertKpiSchema;
+export const CreateKpiDataPointRequest = insertDataPointSchema;

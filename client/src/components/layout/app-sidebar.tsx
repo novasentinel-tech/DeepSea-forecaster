@@ -1,12 +1,4 @@
-import { Link, useLocation } from "wouter";
-import { 
-  Activity, 
-  Database, 
-  LayoutDashboard, 
-  LineChart, 
-  Settings,
-  Zap
-} from "lucide-react";
+import { BarChart3, Home, LayoutDashboard, Settings } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -18,54 +10,45 @@ import {
   SidebarMenuItem,
   SidebarHeader,
 } from "@/components/ui/sidebar";
+import { Link, useLocation } from "wouter";
 
-const navItems = [
-  { title: "Visão Geral", url: "/", icon: LayoutDashboard },
-  { title: "Conjuntos de Dados", url: "/datasets", icon: Database },
-  { title: "Previsões", url: "/forecasts", icon: Activity },
-  { title: "Nova Previsão", url: "/forecasts/new", icon: LineChart },
+const navigation = [
+  { title: "Dashboard", url: "/", icon: Home },
+  { title: "KPI Explorer", url: "/kpis", icon: BarChart3 },
 ];
 
 export function AppSidebar() {
   const [location] = useLocation();
 
   return (
-    <Sidebar className="border-r border-border/50 bg-sidebar/50 backdrop-blur-xl">
-      <SidebarHeader className="p-4 flex flex-row items-center gap-2 border-b border-border/50">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/20 text-primary ring-1 ring-primary/30">
-          <Zap className="h-5 w-5" />
+    <Sidebar className="border-r border-border/50">
+      <SidebarHeader className="h-16 flex items-center px-6 border-b border-border/50">
+        <div className="flex items-center gap-2 font-display font-bold text-xl tracking-tight text-primary">
+          <div className="bg-primary/10 p-1.5 rounded-lg">
+            <LayoutDashboard className="h-5 w-5 text-primary" />
+          </div>
+          Nexus<span className="text-foreground">Metrics</span>
         </div>
-        <span className="font-bold text-lg tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">
-          Jota<span className="text-primary font-black">IA</span>
-        </span>
       </SidebarHeader>
-      
-      <SidebarContent className="p-2 mt-4">
+      <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel className="text-xs uppercase tracking-wider text-muted-foreground/70 px-2 mb-2">
-            Motor de Análise
+          <SidebarGroupLabel className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mt-4 mb-2">
+            Overview
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navItems.map((item) => {
-                const isActive = location === item.url || (item.url !== "/" && location.startsWith(item.url));
+              {navigation.map((item) => {
+                const isActive = location === item.url;
                 return (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton 
                       asChild 
                       isActive={isActive}
-                      tooltip={item.title}
-                      className={`
-                        transition-all duration-200 py-5 px-3 rounded-xl mb-1
-                        ${isActive 
-                          ? 'bg-primary/10 text-primary hover:bg-primary/15' 
-                          : 'text-muted-foreground hover:bg-secondary/50 hover:text-foreground'
-                        }
-                      `}
+                      className="hover-elevate my-0.5 rounded-lg font-medium"
                     >
                       <Link href={item.url} className="flex items-center gap-3">
-                        <item.icon className={`h-5 w-5 ${isActive ? 'text-primary' : ''}`} />
-                        <span className="font-medium">{item.title}</span>
+                        <item.icon className="h-4 w-4" />
+                        <span>{item.title}</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -74,6 +57,19 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+        
+        <div className="mt-auto p-4">
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild className="hover-elevate text-muted-foreground hover:text-foreground">
+                <Link href="#" className="flex items-center gap-3">
+                  <Settings className="h-4 w-4" />
+                  <span>Settings</span>
+                </Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </div>
       </SidebarContent>
     </Sidebar>
   );
