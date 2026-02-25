@@ -45,7 +45,7 @@
     "cmdk": "^1.0.0",
     "date-fns": "^3.6.0",
     "dotenv": "^16.4.5",
-    "drizzle-orm": "^0.30.10",
+    "drizzle-orm": "^0.45.1",
     "drizzle-zod": "^0.5.1",
     "embla-carousel-react": "^8.1.5",
     "express": "^4.19.2",
@@ -73,11 +73,11 @@
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",
     "autoprefixer": "^10.4.19",
-    "drizzle-kit": "^0.22.7",
+    "drizzle-kit": "^0.31.9",
     "esbuild": "^0.21.5",
     "postcss": "^8.4.38",
     "tailwindcss": "^3.4.4",
-    "tsx": "^4.15.6",
+    "tsx": "^4.21.0",
     "typescript": "^5.4.5",
     "vite": "^5.2.13"
   }
